@@ -394,6 +394,9 @@ export default function StoryWorld({ envCount }) {
     const aspect = st.size.width / st.size.height
     const squeeze = clamp(aspect / 1.6, 0.35, 1)
     tx *= squeeze
+    const portrait = aspect < 1
+    if (portrait && c > 0.62) { ts *= 0.6; tz -= 2 }
+    mats.glow.color.setRGB(2.4, 1.25, 0.55).multiplyScalar(portrait ? 0.45 : 1)
 
     // exploration: the core is drawn toward the hovered / active skill cluster
     const w = smooth((c - 2.05) / 0.15) * (1 - smooth((c - 2.85) / 0.15))

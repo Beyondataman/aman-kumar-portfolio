@@ -167,7 +167,7 @@ img { max-width: 100%; display: block; }
 .ch-head .body-l { margin-bottom: 0; }
 .timeline { list-style: none; margin: 14vh 0 0; padding: 0 0 0 28px; max-width: 56%; position: relative; }
 .timeline::before { content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 1px; background: linear-gradient(var(--line), rgba(255, 255, 255, 0.25), var(--line)); }
-.tl-item { position: relative; margin-bottom: 26vh; opacity: 0.32; filter: blur(1.6px); transition: opacity 0.7s var(--ease), filter 0.7s var(--ease), transform 0.7s var(--ease); transform: translateX(-10px); }
+.tl-item { position: relative; margin-bottom: 18vh; opacity: 0.32; filter: blur(1.6px); transition: opacity 0.7s var(--ease), filter 0.7s var(--ease), transform 0.7s var(--ease); transform: translateX(-10px); }
 .tl-item--b { margin-left: 14%; }
 .tl-item.is-focus { opacity: 1; filter: none; transform: none; }
 .tl-node { position: absolute; left: -28px; top: 8px; width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--ink-2); background: var(--bg); }
@@ -278,7 +278,7 @@ img { max-width: 100%; display: block; }
 /* =========================================================
    Chapter 7 — Developer Engine
    ========================================================= */
-.ch-engine { height: 440vh; padding: 0; }
+.ch-engine { height: 300vh; padding: 0; }
 .engine-head { position: absolute; left: 6vw; top: 12vh; z-index: 3; max-width: 400px; }
 .engine-head .display-m { font-size: clamp(1.8rem, 3.1vw, 3rem); }
 .layout-switch { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: rgba(10, 10, 12, 0.6); backdrop-filter: blur(8px); }
@@ -318,6 +318,8 @@ img { max-width: 100%; display: block; }
 .win { cursor: pointer; }
 .wincount { margin-left: auto; color: var(--muted); font-size: 0.66rem; }
 .engine-hint { margin: 10px 0 0; font-size: 0.66rem; }
+.engine-next { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); z-index: 3; font-size: 0.68rem; color: var(--muted); letter-spacing: 0.14em; text-transform: uppercase; animation: nudgeDown 2.4s ease-in-out infinite; }
+@keyframes nudgeDown { 50% { transform: translate(-50%, 4px); opacity: 0.6; } }
 .mini-cap { fill: var(--ink-2); font: 8px var(--f-body); }
 .mini-axis { stroke: rgba(255, 255, 255, 0.12); stroke-width: 0.6; }
 .mini-bar { transform-box: fill-box; transform-origin: bottom; animation: barUp 0.6s var(--ease) both; animation-delay: calc(var(--i) * 60ms); }
@@ -372,7 +374,8 @@ img { max-width: 100%; display: block; }
 .end-session { min-height: 220px; overflow-x: auto; }
 .contact { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 54px; justify-content: center; }
 .contact-link { font: 700 clamp(1.2rem, 2.4vw, 2rem) var(--f-display); text-decoration: none; padding: 6px 4px; border-bottom: 1px solid transparent; }
-a.contact-link:hover { color: var(--accent); border-color: var(--accent); }
+a.contact-link:hover, a.contact-link:focus-visible { color: var(--accent); border-color: var(--accent); }
+a.contact-link span { font-size: 0.6em; vertical-align: 0.35em; color: var(--accent); }
 .contact-link.is-todo { color: var(--muted); }
 .contact-link small { font-size: 0.55rem; color: var(--accent); vertical-align: super; }
 .end-actions { display: flex; gap: 12px; margin-top: 40px; flex-wrap: wrap; justify-content: center; }
@@ -466,6 +469,78 @@ a.contact-link:hover { color: var(--accent); border-color: var(--accent); }
   .origin-meta { max-width: 80vw; top: 44vh; }
   .scroll-cue { display: none; }
   .topbar-nav .link-quiet { display: none; }
+}
+
+
+/* =========================================================
+   Phone layout
+   ========================================================= */
+@media (max-width: 900px) {
+  /* name: words sit together, tagline below them */
+  .nm-first { top: 20vh; }
+  .nm-last { top: calc(20vh + 1.02em); bottom: auto; }
+  .origin-meta { top: auto; bottom: 15vh; max-width: 88vw; }
+
+  /* foundation: keep the two degrees close */
+  .ch-foundation { padding-top: 16vh; padding-bottom: 10vh; }
+  .timeline { margin-top: 7vh; }
+  .tl-item { margin-bottom: 8vh; }
+
+  /* exploration: legend + clusters as aligned lists */
+  .ch-exploration { padding-top: 14vh; }
+  .level-legend li { display: grid; grid-template-columns: 14px 1fr; column-gap: 10px; row-gap: 2px; align-items: center; }
+  .level-legend li .muted { grid-column: 2; font-size: 0.85rem; }
+  .clusters { margin-top: 6vh; gap: 28px; }
+  .cluster.is-dim { opacity: 1; }
+  .constellation { height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 10px; padding-top: 14px; }
+  .links { display: none; }
+  .node-wrap { position: relative; left: auto !important; top: auto !important; transform: none; }
+  .node { display: grid; grid-template-columns: 22px 1fr; grid-template-rows: auto auto; column-gap: 8px; row-gap: 2px; justify-items: start; text-align: left; padding: 4px 0; }
+  .node-dot { grid-row: 1 / 3; align-self: center; width: 16px; height: 16px; }
+  .node-label { white-space: normal; font-size: 0.9rem; }
+  .tip { left: 0; bottom: auto; top: calc(100% + 6px); transform: translateY(6px); width: min(240px, 78vw); }
+  .is-open .tip { transform: none; }
+  .node-wrap:nth-of-type(even) .tip { left: auto; right: 0; }
+
+  /* building: a readable panel over the 3D scene */
+  .ch-building { padding-top: 14vh; }
+  .exp-grid { margin-top: 5vh; padding: 18px 16px; border-radius: 16px; background: rgba(5, 5, 6, 0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .project-cards { margin-top: 6vh; }
+  .ch-head { text-shadow: 0 2px 18px rgba(0, 0, 0, 0.9); }
+
+  /* continuation */
+  .ch-continuation { padding-top: 14vh; padding-bottom: 10vh; }
+  .steps { margin-top: 6vh; }
+  .now { margin-top: 6vh; }
+
+  /* developer engine: a normal stacked section, no long pinned scroll */
+  .ch-engine { height: auto; padding: 14vh 5vw 8vh; }
+  .ch-engine .sticky { position: relative; height: auto; overflow: visible; }
+  .engine-head { position: static; max-width: none; }
+  .layout-switch, .engine-next { display: none; }
+  .engine { position: relative; inset: auto; perspective: none; display: grid; gap: 14px; margin-top: 22px; }
+  .engine .win, .engine[data-layout] .win-editor, .engine[data-layout] .win-term, .engine[data-layout] .win-preview {
+    position: relative; left: auto; top: auto; width: 100%; height: auto; display: flex;
+    transform: none !important; opacity: 1 !important; filter: none !important;
+  }
+  .win-editor .code { height: 210px; font-size: 10.5px; }
+  .ln { width: 2.4em; padding-right: 0.8em; }
+  .win-term .term { height: 180px; font-size: 10.5px; }
+  .mini-chart { height: 180px; }
+  .tabs .tab:not(.is-on) { display: none; }
+
+  /* compact chapter tracker */
+  .chapter-indicator { left: 12px; bottom: 12px; padding: 6px 12px; gap: 10px; }
+  .ci-tick { width: 8px; }
+  .ci-tick.is-active { width: 18px; }
+
+  /* ending */
+  .ch-ending { padding-top: 12vh; }
+  .end-term { padding: 18px 16px; font-size: 0.8rem; }
+  .end-session { min-height: 190px; }
+  .contact { gap: 8px 20px; margin-top: 36px; }
+  .contact-link { font-size: 1.35rem; }
+  .end-actions .btn { width: 100%; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {

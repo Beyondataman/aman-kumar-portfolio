@@ -16,9 +16,9 @@ export const profile = {
   last: 'KUMAR',
   tagline: 'Business Analytics · Mathematics · Technology',
   contact: {
-    email: TODO('Email address'),
-    linkedin: TODO('LinkedIn URL'),
-    github: TODO('GitHub URL'),
+    email: 'b.aman14k2@gmail.com',
+    linkedin: 'https://www.linkedin.com/in/aman14k',
+    github: 'https://github.com/BeastBeyond',
     resume: TODO('Résumé PDF link'),
   },
 }

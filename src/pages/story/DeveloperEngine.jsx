@@ -12,7 +12,7 @@ export default function DeveloperEngine({ ref }) {
   const stage = useRef(null)
   const inView = useInView(stage, 0.3)
   const [scrollIdx, setScrollIdx] = useState(0)
-  const [manual, setManual] = useState(null) // { idx, at }
+  const [manual, setManual] = useState(null) // layout index chosen by a click
 
   useEffect(() => {
     let raf = 0
@@ -32,8 +32,8 @@ export default function DeveloperEngine({ ref }) {
     return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', onScroll) }
   }, [])
 
-  // a manual layout choice holds until scrolling moves to the next arrangement
-  const layoutIdx = manual && manual.at === scrollIdx ? manual.idx : scrollIdx
+  // once a visitor picks a layout, keep it — scrolling no longer overrides the choice
+  const layoutIdx = manual ?? scrollIdx
   const L = LAYOUTS[layoutIdx]
 
   // three independent rotations, staggered so windows never change at the same moment
@@ -58,13 +58,14 @@ export default function DeveloperEngine({ ref }) {
           <h2 id="engine-title" className="display-m">Where the analysis<br />becomes <em>software</em>.</h2>
           <div className="layout-switch" role="group" aria-label="Workstation layout">
             {LAYOUTS.map((l, i) => (
-              <button key={l.id} aria-pressed={i === layoutIdx} className={i === layoutIdx ? 'is-on' : ''} onClick={() => setManual({ idx: i, at: scrollIdx })}>
+              <button key={l.id} aria-pressed={i === layoutIdx} className={i === layoutIdx ? 'is-on' : ''} onClick={() => setManual(i)}>
                 {l.label}
               </button>
             ))}
           </div>
-          <p className="engine-hint mono muted">click any window to skip ahead</p>
+          <p className="engine-hint mono muted">click or tap any window to skip ahead</p>
         </div>
+        <p className="engine-next mono" aria-hidden="true">keep scrolling ↓ · one more chapter</p>
 
         <div className="engine" data-layout={L.id}>
           <div className="win win-editor" onClick={nextE} aria-label={`Code editor showing ${S.file}`}>

@@ -36,15 +36,20 @@ export default function Ending({ ref, enterHall, toTop }) {
         </div>
         <Session lines={ENDINGS[i]} key={i} ms={LINE_MS} className="end-session" />
       </div>
-      <div className="contact">
-        {links.map(([label, v, href]) =>
-          isTodo(v) ? (
-            <span key={label} className="contact-link is-todo" title={`Placeholder — ${v.label}`}>{label} <small className="mono">to add</small></span>
-          ) : (
-            <a key={label} className="contact-link" href={href(v)} target="_blank" rel="noreferrer">{label} ↗</a>
-          )
-        )}
-      </div>
+      {/* labels only — each one opens the right place; placeholders stay hidden */}
+      <nav className="contact" aria-label="Contact">
+        {links.filter(([, v]) => !isTodo(v)).map(([label, v, href]) => (
+          <a
+            key={label}
+            className="contact-link"
+            href={href(v)}
+            {...(label === 'Email' ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
+            aria-label={label === 'Email' ? `Email Aman Kumar` : `Aman Kumar on ${label} (opens in a new tab)`}
+          >
+            {label} <span aria-hidden="true">↗</span>
+          </a>
+        ))}
+      </nav>
       <div className="end-actions">
         <button className="btn" onClick={enterHall}>Re-enter the Analytics Hall</button>
         <button className="btn btn--ghost" onClick={toTop}>Back to the beginning ↑</button>
