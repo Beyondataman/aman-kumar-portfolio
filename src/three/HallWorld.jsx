@@ -25,6 +25,23 @@ import { mulberry32 } from './util'
 const LOGO_FILES = import.meta.glob('../assets/company-logos/*.svg', { eager: true, query: '?url', import: 'default' })
 const LOGOS = Object.fromEntries(Object.entries(LOGO_FILES).map(([p, u]) => [p.split('/').pop().replace('.svg', ''), u]))
 
+// brand colours for the 3D marks (Simple Icons values; Apple's black reads as polished silver on the dark page)
+const BRAND = {
+  nvidia: '#76B900', apple: '#d9dde6', google: 'google', meta: '#0467DF', amd: '#ED1C24',
+  microsoft: '#00A4EF', amazon: '#FF9900', tsmc: '#E60012',
+}
+const GOOGLE = { red: new THREE.Color('#EA4335'), yellow: new THREE.Color('#FBBC05'), green: new THREE.Color('#34A853'), blue: new THREE.Color('#4285F4') }
+/** colour each vertex of the extruded "G" by its angle, like the real four-colour mark */
+function paintGoogle(g) {
+  const pos = g.attributes.position, col = new Float32Array(pos.count * 3)
+  for (let i = 0; i < pos.count; i++) {
+    const a = Math.atan2(pos.getY(i), pos.getX(i)) * 180 / Math.PI // 0 = right, 90 = top
+    const c = a > -28 && a <= 25 ? GOOGLE.blue : a > 25 && a <= 155 ? GOOGLE.red : (a > 155 || a <= -150) ? GOOGLE.yellow : a > -150 && a <= -28 && a < -100 ? GOOGLE.green : GOOGLE.green
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3))
+}
+
 const CUBE = 0.13 // cube edge (world units at island scale 1)
 const STEP = 0.16 // grid pitch → small gaps like the mosaic
 const ISLAND_H = 3.4 // design height of an island (base + mark + orbit room)
@@ -149,25 +166,36 @@ function Island({ c, index, density, active }) {
 
   const geo = useMemo(() => new THREE.BoxGeometry(CUBE, CUBE, CUBE), [])
   const mat = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.38, metalness: 0.2, envMapIntensity: 0.8, emissive: new THREE.Color('#141a33'), emissiveIntensity: 1 }), [])
-  const markMat = useMemo(() => (live_
-    ? new THREE.MeshPhysicalMaterial({
-      color: '#f1f4ff', metalness: 0.85, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08,
-      envMapIntensity: 1.6, emissive: new THREE.Color('#3a55d6'), emissiveIntensity: 0.45,
-    })
-    : new THREE.MeshStandardMaterial({
-      color: '#6f7892', metalness: 0.55, roughness: 0.5, envMapIntensity: 0.7,
-      emissive: new THREE.Color('#0c1024'), emissiveIntensity: 0.3,
-    })), [live_])
+  const brand = BRAND[c.id]
+  const markMat = useMemo(() => {
+    const multi = brand === 'google'
+    const base = new THREE.Color(multi ? '#ffffff' : brand ?? '#9aa3bd')
+    // analysed: full colour, polished, glowing; in progress: same colour, matte and dimmed
+    if (!live_) base.multiplyScalar(0.62)
+    const glow = multi ? new THREE.Color('#2a3a7a') : new THREE.Color(brand ?? '#3a55d6')
+    return live_
+      ? new THREE.MeshPhysicalMaterial({
+        color: base, vertexColors: multi, metalness: 0.35, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.06,
+        envMapIntensity: 1.4, emissive: glow, emissiveIntensity: 0.35,
+      })
+      : new THREE.MeshStandardMaterial({
+        color: base, vertexColors: multi, metalness: 0.25, roughness: 0.55, envMapIntensity: 0.7,
+        emissive: glow, emissiveIntensity: 0.08,
+      })
+  }, [live_, brand])
   const halo = useMemo(() => {
     if (!live_) return null
     const cv = document.createElement('canvas'); cv.width = cv.height = 128
     const g = cv.getContext('2d')
     const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64)
-    gr.addColorStop(0, 'rgba(150,175,255,0.55)'); gr.addColorStop(0.45, 'rgba(110,140,255,0.18)'); gr.addColorStop(1, 'rgba(110,140,255,0)')
+    const hc = new THREE.Color(BRAND[c.id] && BRAND[c.id] !== 'google' ? BRAND[c.id] : '#8fa8ff')
+    const sr = hc.getRGB({}, THREE.SRGBColorSpace)
+    const rgb = `${Math.round(sr.r * 255)},${Math.round(sr.g * 255)},${Math.round(sr.b * 255)}`
+    gr.addColorStop(0, `rgba(${rgb},0.5)`); gr.addColorStop(0.45, `rgba(${rgb},0.16)`); gr.addColorStop(1, `rgba(${rgb},0)`)
     g.fillStyle = gr; g.fillRect(0, 0, 128, 128)
     const tex = new THREE.CanvasTexture(cv)
     return new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })
-  }, [live_])
+  }, [live_, c.id])
   const haloRef = useRef()
   const dockPts = useRef(null) // points on the logo's front face that cubes fly to
   useEffect(() => () => { geo.dispose(); mat.dispose(); markMat.dispose(); halo?.map.dispose(); halo?.dispose() }, [geo, mat, markMat, halo])
@@ -207,6 +235,7 @@ function Island({ c, index, density, active }) {
       const sc = Math.min(mw / w, mh / h)
       g.scale(sc, -sc, sc) // SVG y points down
       g.computeVertexNormals()
+      if (brand === 'google') paintGoogle(g)
       // front-face points for the visiting cubes
       const pos = g.attributes.position, zmax = (bb.max.z - bb.min.z) * sc / 2
       const pts = []
@@ -216,7 +245,7 @@ function Island({ c, index, density, active }) {
       svgRef.current.geometry = g
     })
     return () => { alive = false }
-  }, [c.id, live_])
+  }, [c.id, live_, brand])
 
   const _m = useMemo(() => new THREE.Matrix4(), [])
   const _p = useMemo(() => new THREE.Vector3(), [])
@@ -290,7 +319,7 @@ function Island({ c, index, density, active }) {
 
     // the mark: gentle bob, brighter while hovered
     const pulse = live_ && !reduced ? 0.5 + 0.5 * Math.sin(t * 1.6) : 0.5
-    const glow = (live_ ? 0.32 + 0.3 * pulse : 0.3) + hot * 0.45
+    const glow = (live_ ? 0.22 + 0.25 * pulse : 0.08) + hot * 0.3
     markMat.emissiveIntensity += (glow - markMat.emissiveIntensity) * Math.min(1, dt * 4)
     if (haloRef.current) {
       haloRef.current.material.opacity = 0.75 + 0.25 * pulse + hot * 0.3

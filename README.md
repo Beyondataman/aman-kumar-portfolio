@@ -86,7 +86,7 @@ Each company floats on a cloud of cubes with its logo extruded into a solid 3D m
 from [Simple Icons](https://simpleicons.org) (CC0 icon data; the marks remain trademarks of their owners, used here
 only to identify the companies analysed). Microsoft, Amazon and TSMC are not in that set, so they show their ticker in
 solid cubes; drop a single-colour SVG named `microsoft.svg`, `amazon.svg` or `tsmc.svg` in that folder to replace it.
-Analysed companies (`caseStudy: true`) get the polished, glowing treatment automatically.
+Each mark uses the brand colour (`BRAND` in `src/three/HallWorld.jsx`; Google is painted in its four colours). Analysed companies (`caseStudy: true`) get full colour, a polished finish, a glow and a halo; the rest are matte and dimmed.
 
 ## Architecture notes (performance spec)
 
