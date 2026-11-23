@@ -60,8 +60,10 @@ export function useSplitReveal(ref, { split = 'words', on = 'mount', delay = 0, 
     const parts = splitter[split]
     if (!parts?.length) return () => splitter.revert()
     utils.set(parts, { y: '110%' })
+    // once settled, undo the split: the clip masks would otherwise crop italic
+    // overhangs and tight letter-spacing at the edges of each word
     const play = () =>
-      animate(parts, { y: ['110%', '0%'], duration, ease: EASE_OUT, delay: stagger(step, { start: delay }) })
+      animate(parts, { y: ['110%', '0%'], duration, ease: EASE_OUT, delay: stagger(step, { start: delay }), onComplete: () => splitter.revert() })
     const stop = on === 'view' ? whenVisible(el, play) : (play(), () => {})
     return () => { stop(); splitter.revert() }
   }, deps)

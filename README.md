@@ -84,7 +84,7 @@ Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), Je
   re-created. Home (the portrait mosaic, `HeroWorld.jsx` + `mosaic.js`), Hall and Workspace are separate "worlds" in the same scene;
   inactive worlds are hidden, and the Hall/Workspace worlds are lazy-mounted on first visit then kept.
 - **Shared light rig**: lights are never added/removed on route change (avoids shader recompiles); worlds only retarget them.
-- **Portrait mosaic**: one `THREE.Points` draw call (one square per grid cell, sampled from `src/assets/aman-portrait.webp`; the white backdrop is flood-filled out). Fewer, larger squares on phones; the canvas stops rendering once the hero is scrolled away.
+- **Portrait mosaic**: one `THREE.Points` draw call (one square per grid cell, sampled from `src/assets/aman-portrait.webp`; the white backdrop is removed by the image's alpha mask). Fewer, larger squares on phones; the canvas stops rendering once the hero is scrolled away.
 - **Instancing**: Hall pillars and the instrument arc use `InstancedMesh`.
 - **Demand-based rendering**: `frameloop="demand"`; full rate only while scrolling / pointer moves / transitions,
   a 30 fps ambient rate on the home hero and in the Hall, and **zero** frames while reading a dashboard. Paused in hidden tabs.
@@ -110,7 +110,8 @@ Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), Je
 |---|---|
 | `env-pieces.glb` | 4 bevelled architectural pieces (clean, chipped, stepped, split) — boolean cuts, 4-segment bevels, weighted normals |
 | `core-shard.glb` | crystalline shard (used by the v1 story; kept for reuse) |
-| `surface.jpg` | 2048² **seamless** surface map baked in Cycles (R height · G roughness · B tone): layered 4D noise + Voronoi fracture seams |
+| `surface.webp` | **seamless** surface map baked in Cycles (R height · G roughness · B tone): layered 4D noise + Voronoi fracture seams. Baked at 2048², shipped as a 1024² WebP (~190 KB) |
+| `aman-portrait.webp` | the hero portrait with an alpha mask (backdrop removed, collar/neck kept) — rebuild with `python3 tools/make_portrait_mask.py public/images/aman-portrait.jpg src/assets/aman-portrait.webp 0.76 12` |
 
 The surface is applied with **triplanar mapping** (`src/three/assets.js → applySurface`) using each piece's real scaled size,
 so detail never stretches on scaled pieces. It drives bump, roughness and tone on the Hall pillars.

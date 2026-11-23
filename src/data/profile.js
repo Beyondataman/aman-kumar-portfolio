@@ -257,13 +257,12 @@ export const home = {
       id: 'analysis', title: 'Business & Financial Analysis',
       bullets: ['Statistical analysis from a maths base', 'Reading filings, ratios, margins & growth', 'Market research and sizing', 'Question → data → insight → decision'],
       text: 'Asking the right question first, then testing what the numbers really say.',
-      cta: { label: 'Open the Analytics Hall', to: '/hall' },
     },
     {
       id: 'cases', title: 'Company Case Studies',
       bullets: ['Figures sourced from 10-Ks & results releases', 'Interactive dashboards per company', 'Methodology and sources shown with every view'],
       text: 'The Analytics Hall: one company at a time, built from primary sources. NVIDIA is live; more are in progress.',
-      cta: { label: 'Open the NVIDIA case', to: '/workspace/nvidia' },
+      cta: { label: 'Open the Analytics Hall', to: '/hall' },
     },
     {
       id: 'web', title: 'Web & Event Technology',
@@ -281,9 +280,9 @@ export const home = {
   workIntro: 'Analysis built from primary sources, and the technology projects around it.',
   // "BOLD *italic*" title + second line, per work row
   work: [
-    { id: 'nvidia', to: '/workspace/nvidia', title: 'NVIDIA *case*', sub: 'From graphics to AI', media: 'chart',
+    { id: 'nvidia', to: '/hall', title: 'NVIDIA *case*', sub: 'From graphics to AI', media: 'chart',
       text: "An interactive case study of NVIDIA's FY22–FY26 growth — revenue mix, margins, geography and customer concentration — with every figure sourced from the company's filings.",
-      links: [{ label: 'Open dashboard', to: '/workspace/nvidia' }, { label: 'Analytics Hall', to: '/hall' }] },
+      links: [{ label: 'Analytics Hall', to: '/hall' }] },
     { id: 'tedxisme', to: '/projects/tedxisme', title: 'TEDxISME', sub: 'Event platform', media: 'ticket',
       text: 'The technology behind TEDxISME: the event website, its backend, and the registration and ticketing workflows attendees use to sign up.',
       links: [{ label: 'Project details', to: '/projects/tedxisme' }] },

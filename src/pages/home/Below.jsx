@@ -205,7 +205,7 @@ function TicketArt() {
         <div className="ticket-main">
           <span className="mono">Admit one</span>
           <strong>TEDxISME</strong>
-          <span className="mono">Registration · Ticketing · Check-in</span>
+          <span className="mono">Registration · Ticketing</span>
         </div>
         <div className="ticket-stub">
           <div className="qr">{cells.map((on, i) => <i key={i} className={on ? 'on' : ''} />)}</div>
@@ -245,10 +245,10 @@ function MosaicArt() {
       const cell = 6
       c.width = cols * cell; c.height = rows * cell
       const g = c.getContext('2d')
-      g.fillStyle = '#060608'; g.fillRect(0, 0, c.width, c.height)
       for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-        const L = d[(y * cols + x) * 4] / 255
-        if (L > 0.8) continue
+        const k = (y * cols + x) * 4
+        if (d[k + 3] < 128) continue // backdrop (alpha mask)
+        const L = d[k] / 255
         const b = Math.pow(Math.min(1, Math.max(0, (L - 0.03) / 0.8)), 0.9)
         const v = 0.45 + 0.85 * b
         g.fillStyle = `rgb(${Math.round((18 + 190 * b) * v)},${Math.round((20 + 202 * b) * v)},${Math.round((33 + 222 * b) * v)})`
@@ -285,7 +285,7 @@ function Contact({ ref, go }) {
           <h2 id="contact-title" ref={head} className="h-giant h-giant--contact">{rich(home.contactTitle)}</h2>
           <p className="h-contact-text" data-in>{home.contactText}</p>
           <div className="h-contact-actions" data-in>
-            <Magnetic as="a" className="h-pill h-pill--solid" href={`mailto:${c.email}`} aria-label="Email Aman Kumar">Email me ✉</Magnetic>
+            <Magnetic as="a" className="h-pill h-pill--solid" href={`mailto:${c.email}`} aria-label="Email Aman Kumar">Email me ↗</Magnetic>
             {links.map(([label, href]) => (
               <a key={label} className="h-pill" href={href} target="_blank" rel="noopener noreferrer" aria-label={`Aman Kumar on ${label} (opens in a new tab)`}>{label} ↗</a>
             ))}

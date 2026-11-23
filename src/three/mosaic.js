@@ -1,10 +1,10 @@
 /**
  * Portrait → mosaic grid.
- * Samples the photo at one square per `cell` CSS pixels, keys out the
- * studio background (near-white cells flood-filled from the image edges,
- * so the enclosed white shirt collar is kept), adds a soft rim on the
- * silhouette so the dark suit reads against black, and returns typed
- * arrays ready for a THREE.Points geometry.
+ * Samples the photo at one square per `cell` CSS pixels, drops the studio
+ * background using the image's alpha mask (made once by
+ * tools/make_portrait_mask.py, which keeps the white collar and neck),
+ * adds a soft rim on the silhouette so the dark suit reads against black,
+ * and returns typed arrays ready for a THREE.Points geometry.
  */
 
 const CAM_Z = 12
@@ -47,24 +47,15 @@ export function buildMosaic(img, { vw, vh, cell, unit }) {
   const px = ctx.getImageData(0, 0, cols, rows).data
 
   const n = cols * rows
+  // the portrait carries an alpha mask (tools/make_portrait_mask.py): 0 = studio backdrop
   const lum = new Float32Array(n)
-  for (let i = 0; i < n; i++) lum[i] = (0.2126 * px[i * 4] + 0.7152 * px[i * 4 + 1] + 0.0722 * px[i * 4 + 2]) / 255
-
-  // background: flood fill near-white from every edge cell
-  const bg = new Uint8Array(n)
-  const stack = []
-  const seed = (i) => { if (!bg[i] && lum[i] > 0.78) { bg[i] = 1; stack.push(i) } }
-  for (let x = 0; x < cols; x++) { seed(x); seed((rows - 1) * cols + x) }
-  for (let y = 0; y < rows; y++) { seed(y * cols); seed(y * cols + cols - 1) }
-  while (stack.length) {
-    const i = stack.pop()
-    const x = i % cols, y = (i / cols) | 0
-    const visit = (j) => { if (!bg[j] && lum[j] > 0.72) { bg[j] = 1; stack.push(j) } }
-    if (x > 0) visit(i - 1)
-    if (x < cols - 1) visit(i + 1)
-    if (y > 0) visit(i - cols)
-    if (y < rows - 1) visit(i + cols)
+  const alpha = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    lum[i] = (0.2126 * px[i * 4] + 0.7152 * px[i * 4 + 1] + 0.0722 * px[i * 4 + 2]) / 255
+    alpha[i] = px[i * 4 + 3] / 255
   }
+  const bg = new Uint8Array(n)
+  for (let i = 0; i < n; i++) bg[i] = alpha[i] < 0.5 ? 1 : 0
 
   // rim: distance (0, 1, 2 cells) to the background
   const rimOf = (x, y) => {
@@ -97,11 +88,8 @@ export function buildMosaic(img, { vw, vh, cell, unit }) {
         if (r() > 0.035) continue // a little dust around the figure
         b = 0.03 + r() * 0.05
       } else {
-        const rim = rimOf(x, y)
-        // edge cells half-covered by the white backdrop read too bright: treat them as a soft rim
-        const raw = rim === 1 && lum[i] > 0.55 ? 0.3 : lum[i]
-        const L = Math.min(1, Math.max(0, (raw - 0.03) / 0.8))
-        b = Math.min(1, Math.pow(L, 0.85) + rim * 0.1)
+        const L = Math.min(1, Math.max(0, (lum[i] - 0.03) / 0.8))
+        b = Math.min(1, Math.pow(L, 0.85) * Math.min(1, alpha[i] * 1.3) + rimOf(x, y) * 0.1)
       }
       const sx = x0 + (x + 0.5) * cell
       const sy = y0 + (y + 0.5) * cell

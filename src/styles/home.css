@@ -12,7 +12,7 @@
 .h-giant em, .h-giant em :where(span), .h-row-t1 em, .h-row-t1 em :where(span) {
   font-family: var(--f-serif); font-style: italic; font-weight: 400; letter-spacing: -0.01em; text-transform: none;
   background: linear-gradient(180deg, #eef1ff 0%, #b3bfe2 55%, #66708f 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.05em;
+  -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.14em; margin-right: -0.08em;
 }
 
 /* pills & buttons */
@@ -94,7 +94,7 @@
 
 /* ---------------- sections ---------------- */
 .hm-sec { position: relative; padding: 16vh 4vw 10vh; }
-.h-giant { font: 900 clamp(4.5rem, 15vw, 15rem)/0.84 var(--f-display); letter-spacing: -0.055em; margin: 0; padding-bottom: 0.06em; }
+.h-giant { font: 900 clamp(4.5rem, 15vw, 15rem)/0.84 var(--f-display); letter-spacing: -0.055em; margin: 0; padding: 0.04em 0.06em 0.08em 0; }
 
 /* about */
 .h-about { background: linear-gradient(180deg, transparent 0, var(--bg) 18vh); }

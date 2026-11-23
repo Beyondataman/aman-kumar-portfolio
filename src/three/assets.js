@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import piecesUrl from '../assets/env-pieces.glb?url'
 import shardUrl from '../assets/core-shard.glb?url'
-import surfaceUrl from '../assets/surface.jpg'
+import surfaceUrl from '../assets/surface.webp'
 import { kick } from '../lib/live'
 
 /* Blender-made assets (see /blender/make_assets.py). Loaded once, shared by every world. */

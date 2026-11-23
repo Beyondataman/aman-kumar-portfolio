@@ -7,12 +7,23 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 // `npm run build:hash`  -> HashRouter build with relative asset paths (any static host)
 // `npm run build:file`  -> ONE self-contained HTML file (dist-file/index.html) that opens by
 //                          double-click from Finder (file://). No code splitting in this mode.
+// Every supported browser reads WOFF2, so drop the WOFF fallbacks from the self-hosted
+// font CSS: they were never downloaded online, but the single-file build inlined both.
+const woff2Only = () => ({
+  name: 'woff2-only',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!id.includes('@fontsource') || !id.endsWith('.css')) return null
+    return code.replace(/,\s*url\([^)]+\.woff\)\s*format\(['"]woff['"]\)/g, '')
+  },
+})
+
 export default defineConfig(({ mode }) => {
   const file = mode === 'file'
   return {
     base: mode === 'hash' || file ? './' : '/',
     define: file ? { 'import.meta.env.MODE': JSON.stringify('hash') } : {},
-    plugins: [react(), ...(file ? [viteSingleFile()] : [])],
+    plugins: [woff2Only(), react(), ...(file ? [viteSingleFile()] : [])],
     build: {
       target: 'es2020',
       chunkSizeWarningLimit: 4000,
