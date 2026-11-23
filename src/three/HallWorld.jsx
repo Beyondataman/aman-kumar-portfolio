@@ -181,15 +181,17 @@ function Island({ c, index, density, active }) {
     const base = new THREE.Color(multi ? '#ffffff' : brand ?? '#9aa3bd')
     // analysed: full colour, polished, glowing; in progress: same colour, matte and dimmed
     if (!live_) base.multiplyScalar(0.62)
-    const glow = multi ? new THREE.Color('#2a3a7a') : new THREE.Color(brand ?? '#3a55d6')
+    // Low metalness on purpose: phone GPUs that can't sample the environment map render
+    // metallic surfaces black, so the colour must come from the lights and a brand-coloured emissive.
+    const glow = multi ? new THREE.Color('#1c2240') : base.clone()
     return live_
       ? new THREE.MeshPhysicalMaterial({
-        color: base, vertexColors: multi, metalness: 0.35, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.06,
-        envMapIntensity: 1.4, emissive: glow, emissiveIntensity: 0.35,
+        color: base, vertexColors: multi, metalness: 0.12, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08,
+        envMapIntensity: 1.1, emissive: glow, emissiveIntensity: 0.28, side: THREE.DoubleSide,
       })
       : new THREE.MeshStandardMaterial({
-        color: base, vertexColors: multi, metalness: 0.25, roughness: 0.55, envMapIntensity: 0.7,
-        emissive: glow, emissiveIntensity: 0.08,
+        color: base, vertexColors: multi, metalness: 0.08, roughness: 0.6, envMapIntensity: 0.6,
+        emissive: glow, emissiveIntensity: 0.12, side: THREE.DoubleSide,
       })
   }, [live_, brand])
   const halo = useMemo(() => {
@@ -235,7 +237,8 @@ function Island({ c, index, density, active }) {
       if (!alive || !svgRef.current) return
       const shapes = data.paths.flatMap((p) => SVGLoader.createShapes(p))
       // Simple Icons are drawn on a 24-unit grid
-      const opts = { depth: 3.2, curveSegments: 18, bevelEnabled: true, bevelThickness: 0.55, bevelSize: 0.28, bevelSegments: 4 }
+      const lite = window.matchMedia?.('(pointer: coarse)').matches
+      const opts = { depth: 3.2, curveSegments: lite ? 10 : 18, bevelEnabled: true, bevelThickness: 0.55, bevelSize: 0.28, bevelSegments: lite ? 2 : 4 }
       const painter = SHAPE_COLOURS[c.id]
       let g
       if (painter) {
@@ -345,7 +348,7 @@ function Island({ c, index, density, active }) {
 
     // the mark: gentle bob, brighter while hovered
     const pulse = live_ && !reduced ? 0.5 + 0.5 * Math.sin(t * 1.6) : 0.5
-    const glow = (live_ ? 0.22 + 0.25 * pulse : 0.08) + hot * 0.3
+    const glow = (live_ ? 0.22 + 0.2 * pulse : 0.12) + hot * 0.25
     markMat.emissiveIntensity += (glow - markMat.emissiveIntensity) * Math.min(1, dt * 4)
     if (haloRef.current) {
       haloRef.current.material.opacity = 0.75 + 0.25 * pulse + hot * 0.3
@@ -363,7 +366,7 @@ function Island({ c, index, density, active }) {
           {ticker ? (
             <instancedMesh ref={markRef} args={[geo, markMat, ticker.vox.length]} frustumCulled={false} />
           ) : (
-            <mesh ref={svgRef} material={markMat} />
+            <mesh ref={svgRef} material={markMat} frustumCulled={false} />
           )}
         </group>
       </group>

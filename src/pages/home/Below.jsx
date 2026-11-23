@@ -230,33 +230,75 @@ function TerminalArt() {
   )
 }
 
-/** A tiny static mosaic of the portrait, drawn once on a 2D canvas. */
+/**
+ * The portrait as a small 2D mosaic, cropped to the figure so it fills the card.
+ * The squares assemble (like the hero) the first time the card scrolls into view.
+ */
 function MosaicArt() {
   const cv = useRef(null)
   useLayoutEffect(() => {
+    let raf = 0, io, alive = true
     const img = new Image()
     img.onload = () => {
       const c = cv.current
-      if (!c) return
-      const cols = 96, rows = Math.round(cols / (img.naturalWidth / img.naturalHeight))
-      const t = document.createElement('canvas'); t.width = cols; t.height = rows
+      if (!c || !alive) return
+      // find the figure's bounds from the alpha mask
+      const W = 172, H = Math.round(W / (img.naturalWidth / img.naturalHeight))
+      const t = document.createElement('canvas'); t.width = W; t.height = H
       const tx = t.getContext('2d', { willReadFrequently: true })
-      tx.drawImage(img, 0, 0, cols, rows)
-      const d = tx.getImageData(0, 0, cols, rows).data
-      const cell = 6
-      c.width = cols * cell; c.height = rows * cell
-      const g = c.getContext('2d')
+      tx.drawImage(img, 0, 0, W, H)
+      const full = tx.getImageData(0, 0, W, H).data
+      let x0 = W, x1 = 0, y0 = H, y1 = 0
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (full[(y * W + x) * 4 + 3] > 128) {
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y
+      }
+      const pad = 3
+      x0 = Math.max(0, x0 - pad); x1 = Math.min(W - 1, x1 + pad); y0 = Math.max(0, y0 - pad)
+      const cols = 60, rows = Math.round(cols * (y1 - y0 + 1) / (x1 - x0 + 1))
+      const s2 = document.createElement('canvas'); s2.width = cols; s2.height = rows
+      const sx = s2.getContext('2d', { willReadFrequently: true })
+      sx.imageSmoothingQuality = 'high'
+      sx.drawImage(img, x0 / W * img.naturalWidth, y0 / H * img.naturalHeight, (x1 - x0 + 1) / W * img.naturalWidth, (y1 - y0 + 1) / H * img.naturalHeight, 0, 0, cols, rows)
+      const d = sx.getImageData(0, 0, cols, rows).data
+      const cells = []
+      let seed = 11
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
       for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
         const k = (y * cols + x) * 4
         if (d[k + 3] < 128) continue // backdrop (alpha mask)
-        const L = d[k] / 255
-        const b = Math.pow(Math.min(1, Math.max(0, (L - 0.03) / 0.8)), 0.9)
+        const b = Math.pow(Math.min(1, Math.max(0, (d[k] / 255 - 0.03) / 0.8)), 0.9)
         const v = 0.45 + 0.85 * b
-        g.fillStyle = `rgb(${Math.round((18 + 190 * b) * v)},${Math.round((20 + 202 * b) * v)},${Math.round((33 + 222 * b) * v)})`
-        g.fillRect(x * cell, y * cell, cell - 1, cell - 1)
+        cells.push({ x, y, d: 0.55 * rnd() + 0.45 * (y / rows), r: rnd(), q: rnd(),
+          fill: `rgb(${Math.round((18 + 190 * b) * v)},${Math.round((20 + 202 * b) * v)},${Math.round((33 + 222 * b) * v)})` })
       }
+      const cell = 8
+      c.width = cols * cell; c.height = rows * cell
+      const g = c.getContext('2d')
+      const draw = (t) => {
+        g.clearRect(0, 0, c.width, c.height)
+        for (const p of cells) {
+          const u = Math.min(1, Math.max(0, (t - p.d * 0.55) / 0.45))
+          if (u <= 0) continue
+          const e = 1 - Math.pow(1 - u, 4)
+          g.globalAlpha = Math.min(1, u * 3)
+          g.fillStyle = p.fill
+          g.fillRect(p.x * cell + (1 - e) * (p.r - 0.5) * c.width, p.y * cell + (1 - e) * (p.q - 0.5) * c.height, cell - 1.5, cell - 1.5)
+        }
+        g.globalAlpha = 1
+      }
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { draw(1); return }
+      draw(0)
+      io = new IntersectionObserver((es) => {
+        if (!es.some((e) => e.isIntersecting)) return
+        io.disconnect()
+        const t0 = performance.now()
+        const step = (now) => { const t = Math.min(1, Math.max(0, now - t0) / 1800); draw(t); if (t < 1 && alive) raf = requestAnimationFrame(step) }
+        raf = requestAnimationFrame(step)
+      }, { threshold: 0.35 })
+      io.observe(c)
     }
     img.src = portraitUrl
+    return () => { alive = false; cancelAnimationFrame(raf); io?.disconnect() }
   }, [])
   return <div className="art art-mosaic"><canvas ref={cv} aria-hidden="true" /></div>
 }
