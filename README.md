@@ -81,10 +81,12 @@ Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), Je
 
 ## Company logos in the Hall
 
-Each company in the Hall shows its ticker built from solid cubes. To show the real logo instead, add a
-**single-colour SVG** you have the right to use as `src/assets/company-logos/<id>.svg` (ids are in
-`src/data/companies.js`, e.g. `apple.svg`, `google.svg`). It is extruded into a solid 3D mark automatically.
-Simple, filled shapes work best (no gradients or text).
+Each company floats on a cloud of cubes with its logo extruded into a solid 3D mark. The logo files are in
+`src/assets/company-logos/<id>.svg` (ids from `src/data/companies.js`). NVIDIA, Apple, Google, Meta and AMD come
+from [Simple Icons](https://simpleicons.org) (CC0 icon data; the marks remain trademarks of their owners, used here
+only to identify the companies analysed). Microsoft, Amazon and TSMC are not in that set, so they show their ticker in
+solid cubes; drop a single-colour SVG named `microsoft.svg`, `amazon.svg` or `tsmc.svg` in that folder to replace it.
+Analysed companies (`caseStudy: true`) get the polished, glowing treatment automatically.
 
 ## Architecture notes (performance spec)
 

@@ -118,3 +118,4 @@ button.cp:focus-visible { outline: 2px solid var(--accent); outline-offset: 8px;
 }
 .hall2-track.t-track--pin .t-track-sticky { padding-top: 56px; }
 @media (max-width: 640px) { .an-proof .t-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.hall2-tm { margin: 28px 0 0; max-width: 34em; color: #555a65; font-size: 0.64rem; line-height: 1.6; }

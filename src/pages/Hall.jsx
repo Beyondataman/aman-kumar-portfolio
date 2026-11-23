@@ -88,6 +88,7 @@ export default function Hall() {
               <h1 ref={head} className="h-giant hall2-title">{rich('The Analytics|*Hall*')}</h1>
               <p className="hall2-lede">Company case studies built from primary filings. NVIDIA is open now; the rest are being researched.</p>
               <p className="hall2-legend"><span><i className="dot" /> Case study live</span><span><i className="dot dot--hollow" /> In progress</span></p>
+              <p className="hall2-tm mono">Company names and logos are trademarks of their respective owners, used only to identify the companies analysed.</p>
             </div>
           }
           items={companies}

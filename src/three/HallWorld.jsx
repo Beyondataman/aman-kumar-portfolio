@@ -139,29 +139,45 @@ function Island({ c, index, density, active }) {
   const cloud = useMemo(() => buildCloud(101 + index * 37, density), [index, density])
   const orbit = useMemo(() => {
     const r = mulberry32(900 + index * 13)
-    return Array.from({ length: 26 }, () => ({
+    return Array.from({ length: c.caseStudy ? 34 : 20 }, () => ({
       rad: 1.45 + r() * 0.9, tilt: (r() - 0.5) * 0.8, speed: (0.25 + r() * 0.35) * (r() > 0.5 ? 1 : -1),
       ph: r() * Math.PI * 2, y: 0.35 + r() * 1.0, b: 0.35 + r() * 0.55, r: r(),
       dock: 0, dockTarget: null, // 0..1 progress of a visit to the mark
     }))
-  }, [index])
+  }, [index, c.caseStudy])
   const ticker = useMemo(() => (LOGOS[c.id] ? null : buildTickerVoxels(c.ticker)), [c])
 
   const geo = useMemo(() => new THREE.BoxGeometry(CUBE, CUBE, CUBE), [])
   const mat = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.38, metalness: 0.2, envMapIntensity: 0.8, emissive: new THREE.Color('#141a33'), emissiveIntensity: 1 }), [])
-  const markMat = useMemo(() => new THREE.MeshStandardMaterial({
-    roughness: 0.28, metalness: 0.55, envMapIntensity: 1.1,
-    color: live_ ? new THREE.Color('#dfe6ff') : new THREE.Color('#9aa3bd'),
-    emissive: new THREE.Color(live_ ? '#2b3a7a' : '#11152a'), emissiveIntensity: live_ ? 0.55 : 0.3,
-  }), [live_])
-  useEffect(() => () => { geo.dispose(); mat.dispose(); markMat.dispose() }, [geo, mat, markMat])
+  const markMat = useMemo(() => (live_
+    ? new THREE.MeshPhysicalMaterial({
+      color: '#f1f4ff', metalness: 0.85, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08,
+      envMapIntensity: 1.6, emissive: new THREE.Color('#3a55d6'), emissiveIntensity: 0.45,
+    })
+    : new THREE.MeshStandardMaterial({
+      color: '#6f7892', metalness: 0.55, roughness: 0.5, envMapIntensity: 0.7,
+      emissive: new THREE.Color('#0c1024'), emissiveIntensity: 0.3,
+    })), [live_])
+  const halo = useMemo(() => {
+    if (!live_) return null
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128
+    const g = cv.getContext('2d')
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64)
+    gr.addColorStop(0, 'rgba(150,175,255,0.55)'); gr.addColorStop(0.45, 'rgba(110,140,255,0.18)'); gr.addColorStop(1, 'rgba(110,140,255,0)')
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128)
+    const tex = new THREE.CanvasTexture(cv)
+    return new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })
+  }, [live_])
+  const haloRef = useRef()
+  const dockPts = useRef(null) // points on the logo's front face that cubes fly to
+  useEffect(() => () => { geo.dispose(); mat.dispose(); markMat.dispose(); halo?.map.dispose(); halo?.dispose() }, [geo, mat, markMat, halo])
 
   // static colours + the ticker voxels (written once)
   useEffect(() => {
     const col = new THREE.Color(), m = new THREE.Matrix4()
-    cloud.forEach((p, i) => cloudRef.current.setColorAt(i, tone(Math.min(1, p.b * (live_ ? 1 : 0.8)), p.r, col)))
+    cloud.forEach((p, i) => cloudRef.current.setColorAt(i, tone(Math.min(1, p.b * (live_ ? 1.12 : 0.7)), p.r, col)))
     cloudRef.current.instanceColor.needsUpdate = true
-    orbit.forEach((o, i) => orbitRef.current.setColorAt(i, tone(o.b, o.r, col)))
+    orbit.forEach((o, i) => orbitRef.current.setColorAt(i, tone(Math.min(1, o.b * (live_ ? 1.15 : 0.75)), o.r, col)))
     orbitRef.current.instanceColor.needsUpdate = true
     if (ticker && markRef.current) {
       const k = ticker.size / 0.105
@@ -173,7 +189,7 @@ function Island({ c, index, density, active }) {
     }
   }, [cloud, orbit, ticker, live_])
 
-  // optional supplied SVG logo → extruded solid
+  // official logo → solid bevelled extrusion
   useEffect(() => {
     const url = LOGOS[c.id]
     if (!url) return
@@ -181,16 +197,26 @@ function Island({ c, index, density, active }) {
     new SVGLoader().load(url, (data) => {
       if (!alive || !svgRef.current) return
       const shapes = data.paths.flatMap((p) => SVGLoader.createShapes(p))
-      const g = new THREE.ExtrudeGeometry(shapes, { depth: 18, bevelEnabled: true, bevelThickness: 2, bevelSize: 1.5, bevelSegments: 2 })
+      // Simple Icons are drawn on a 24-unit grid
+      const g = new THREE.ExtrudeGeometry(shapes, {
+        depth: 3.2, curveSegments: 18, bevelEnabled: true, bevelThickness: 0.55, bevelSize: 0.28, bevelSegments: 4,
+      })
       g.center(); g.computeBoundingBox()
       const bb = g.boundingBox, w = bb.max.x - bb.min.x, h = bb.max.y - bb.min.y
-      const s = Math.min(2.4 / w, 1.5 / h)
-      g.scale(s, -s, s) // SVG y points down
+      const [mw, mh] = live_ ? [2.7, 1.85] : [2.1, 1.35]
+      const sc = Math.min(mw / w, mh / h)
+      g.scale(sc, -sc, sc) // SVG y points down
+      g.computeVertexNormals()
+      // front-face points for the visiting cubes
+      const pos = g.attributes.position, zmax = (bb.max.z - bb.min.z) * sc / 2
+      const pts = []
+      for (let i = 0; i < pos.count; i += 7) if (pos.getZ(i) > zmax * 0.8) pts.push({ x: pos.getX(i), y: pos.getY(i), z: pos.getZ(i) })
+      dockPts.current = pts
       svgRef.current.geometry?.dispose()
       svgRef.current.geometry = g
     })
     return () => { alive = false }
-  }, [c.id])
+  }, [c.id, live_])
 
   const _m = useMemo(() => new THREE.Matrix4(), [])
   const _p = useMemo(() => new THREE.Vector3(), [])
@@ -221,7 +247,7 @@ function Island({ c, index, density, active }) {
 
     // the whole island floats; the mark sways
     float.current.position.y = -0.15 + (reduced ? 0 : Math.sin(t * 0.7) * 0.08)
-    float.current.rotation.y = reduced ? 0 : Math.sin(t * 0.25) * 0.22 + live.pointer.x * 0.12 * hot
+    float.current.rotation.y = reduced ? 0 : Math.sin(t * 0.25) * (live_ ? 0.42 : 0.2) + live.pointer.x * 0.15 * hot
     float.current.rotation.x = reduced ? 0 : Math.sin(t * 0.31) * 0.04
 
     // cloud cubes breathe individually
@@ -235,16 +261,16 @@ function Island({ c, index, density, active }) {
     cloudRef.current.instanceMatrix.needsUpdate = true
 
     // orbiting cubes; now and then one visits the mark and floats back out
-    const voxels = ticker?.vox
+    const voxels = ticker?.vox ?? dockPts.current
     const k = ticker ? ticker.size / 0.105 : 1
     orbit.forEach((o, i) => {
       const a = o.ph + t * o.speed * (1 + hot * 1.2)
       let x = Math.cos(a) * o.rad, z = Math.sin(a) * o.rad * 0.55
       let y = o.y + Math.sin(a) * o.tilt + Math.sin(t * 0.9 + o.ph) * 0.06
       if (!reduced) {
-        if (!o.dockTarget && Math.random() < dt * 0.025) {
-          const v = voxels ? voxels[Math.floor(Math.random() * voxels.length)] : { x: (Math.random() - 0.5) * 2, y: 0, z: 0 }
-          o.dockTarget = { x: v.x * k, y: v.y * k + MARK_Y, z: (v.z * k) + 0.2 } // land on the front face
+        if (!o.dockTarget && voxels?.length && Math.random() < dt * (live_ ? 0.05 : 0.02)) {
+          const v = voxels[Math.floor(Math.random() * voxels.length)]
+          o.dockTarget = { x: v.x * k, y: v.y * k + MARK_Y, z: v.z * k + (ticker ? 0.2 : 0.09) } // land on the front face
           o.dock = 0
         }
         if (o.dockTarget) {
@@ -263,7 +289,13 @@ function Island({ c, index, density, active }) {
     orbitRef.current.instanceMatrix.needsUpdate = true
 
     // the mark: gentle bob, brighter while hovered
-    markMat.emissiveIntensity += ((live_ ? 0.55 : 0.3) + hot * 0.4 - markMat.emissiveIntensity) * Math.min(1, dt * 4)
+    const pulse = live_ && !reduced ? 0.5 + 0.5 * Math.sin(t * 1.6) : 0.5
+    const glow = (live_ ? 0.32 + 0.3 * pulse : 0.3) + hot * 0.45
+    markMat.emissiveIntensity += (glow - markMat.emissiveIntensity) * Math.min(1, dt * 4)
+    if (haloRef.current) {
+      haloRef.current.material.opacity = 0.75 + 0.25 * pulse + hot * 0.3
+      haloRef.current.scale.setScalar(3.6 + 0.25 * pulse + hot * 0.4)
+    }
   })
 
   return (
@@ -272,6 +304,7 @@ function Island({ c, index, density, active }) {
         <instancedMesh ref={cloudRef} args={[geo, mat, cloud.length]} frustumCulled={false} />
         <instancedMesh ref={orbitRef} args={[geo, mat, orbit.length]} frustumCulled={false} />
         <group position={[0, MARK_Y, 0]}>
+          {halo && <mesh ref={haloRef} material={halo} position-z={-0.6} renderOrder={-1}><planeGeometry args={[1, 0.62]} /></mesh>}
           {ticker ? (
             <instancedMesh ref={markRef} args={[geo, markMat, ticker.vox.length]} frustumCulled={false} />
           ) : (
