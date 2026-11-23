@@ -118,7 +118,7 @@ export default function HScrollTrack({ items, renderPanel, intro, label, classNa
 
   // keyboard: focusing an off-screen panel scrolls the page so it comes into view
   const onFocus = (e) => {
-    if (!pin) return
+    if (!pin || !e.target.matches?.(':focus-visible')) return // keyboard focus only, not clicks
     const p = e.target.closest('.t-panel')
     if (!p || !dist.current) return
     const target = Math.min(1, Math.max(0, (p.offsetLeft + p.offsetWidth / 2 - window.innerWidth / 2) / dist.current))

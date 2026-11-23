@@ -61,9 +61,9 @@ export const skillGroups = [
     title: 'Data & Code',
     caption: 'Getting, shaping and querying data',
     skills: [
-      { id: 'python', name: 'Python', level: 'practicing', note: 'Data cleaning, analysis scripts and automation.' },
-      { id: 'sql', name: 'SQL', level: 'practicing', note: 'Querying, joining and aggregating relational data.' },
-      { id: 'linux', name: 'Technology & Linux', level: 'applied', note: 'Command line, system setup and self-hosted experiments.' },
+      { id: 'python', name: 'Python', level: 'practicing', note: 'Data cleaning, analysis scripts and automation.', evidence: TODO('A project, notebook or coursework where you used Python') },
+      { id: 'sql', name: 'SQL', level: 'practicing', note: 'Querying, joining and aggregating relational data.', evidence: TODO('A project or coursework where you used SQL') },
+      { id: 'linux', name: 'Technology & Linux', level: 'applied', note: 'Command line, system setup and self-hosted experiments.', evidence: [{ label: 'Linux & Technology Lab', to: '/projects/linux-lab' }, { label: 'TEDxISME platform', to: '/projects/tedxisme' }] },
     ],
   },
   {
@@ -71,9 +71,9 @@ export const skillGroups = [
     title: 'BI & Visualisation',
     caption: 'Turning tables into decisions',
     skills: [
-      { id: 'excel', name: 'Advanced Excel', level: 'applied', note: 'Lookups, pivots, modelling and reporting workbooks.' },
-      { id: 'powerbi', name: 'Power BI', level: 'practicing', note: 'Data models, DAX measures and interactive reports.' },
-      { id: 'tableau', name: 'Tableau', level: 'learning', note: 'Visual analytics and dashboard storytelling.' },
+      { id: 'excel', name: 'Advanced Excel', level: 'applied', note: 'Lookups, pivots, modelling and reporting workbooks.', evidence: TODO('A workbook or coursework deliverable built in Excel') },
+      { id: 'powerbi', name: 'Power BI', level: 'practicing', note: 'Data models, DAX measures and interactive reports.', evidence: TODO('A Power BI report you built') },
+      { id: 'tableau', name: 'Tableau', level: 'learning', note: 'Visual analytics and dashboard storytelling.', evidence: TODO('A Tableau dashboard or course') },
     ],
   },
   {
@@ -81,10 +81,10 @@ export const skillGroups = [
     title: 'Analysis & Business',
     caption: 'Asking the right question first',
     skills: [
-      { id: 'stats', name: 'Statistical Analysis', level: 'applied', note: 'Descriptive and inferential statistics from a mathematics base.' },
-      { id: 'finance', name: 'Financial Analysis', level: 'learning', note: 'Reading filings, ratios, margins and growth.' },
-      { id: 'market', name: 'Market Research', level: 'learning', note: 'Framing questions, sizing markets, synthesising sources.' },
-      { id: 'ba', name: 'Business Analytics', level: 'practicing', note: 'Connecting data work to business outcomes.' },
+      { id: 'stats', name: 'Statistical Analysis', level: 'applied', note: 'Descriptive and inferential statistics from a mathematics base.', evidence: [{ label: 'BSc Mathematics — Meerut College' }] },
+      { id: 'finance', name: 'Financial Analysis', level: 'learning', note: 'Reading filings, ratios, margins and growth.', evidence: [{ label: 'NVIDIA case study', to: '/hall' }] },
+      { id: 'market', name: 'Market Research', level: 'learning', note: 'Framing questions, sizing markets, synthesising sources.', evidence: TODO('A market-research piece you worked on') },
+      { id: 'ba', name: 'Business Analytics', level: 'practicing', note: 'Connecting data work to business outcomes.', evidence: [{ label: 'PGDM Business Analytics — ISME' }, { label: 'NVIDIA case study', to: '/hall' }] },
     ],
   },
 ]
@@ -214,6 +214,17 @@ export const projects = {
 }
 
 export const projectOrder = ['tedxisme', 'linux-lab', 'portfolio']
+
+/* ---------------- Analytics page (v2) ----------------
+ * The loop from the v1 story ("Question → Data → Insight → Build"), each step
+ * shown in the NVIDIA case. Skill evidence lives on each skill above.
+ */
+export const approach = [
+  { id: 'question', title: 'Question', text: 'Start from the decision someone actually has to make.' },
+  { id: 'data', title: 'Data', text: 'Find the sources, clean them, and question them.' },
+  { id: 'insight', title: 'Insight', text: 'Model, visualise, and test what the numbers really say.' },
+  { id: 'build', title: 'Build', text: 'Ship it as something people can use — a dashboard, a tool, a site.' },
+]
 
 /* ---------------- Home page (v2) ----------------
  * Text for the single-page home. **double asterisks** = bold in the bio,

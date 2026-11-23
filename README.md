@@ -5,7 +5,8 @@ One connected site with two distinct experiences:
 | Route | Experience |
 |---|---|
 | `/` | **Home.** Single page: particle-mosaic portrait hero → About (Intro + skill marquee) → Skills (numbered accordion) → Selected work → Contact. Text lives in `home` in `src/data/profile.js` |
-| `/hall` | **Experience B — The Analytics Hall.** Spatial gallery of company monoliths |
+| `/analytics` | **Analytics.** How I work (Question → Data → Insight → Build, shown in the NVIDIA case) and every tool with evidence of where it was used |
+| `/hall` | **The Analytics Hall.** Horizontal gallery: each company floats on a cloud of cubes with its 3D mark and orbiting cubes |
 | `/workspace/:companyId` | **Company analytical workspace** (3D instrument sidebar + interactive dashboard). Live: `nvidia` |
 | `/projects/:projectId` | Project detail destinations: `tedxisme`, `linux-lab`, `portfolio` |
 
@@ -77,6 +78,13 @@ Reusable templates live in `src/templates/` — preview them all at **`/template
 - `charts.jsx`: `LineDraw`, `BarRace` and `StatBand`, small SVG charts that animate as they appear.
 
 Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), JetBrains Mono (labels). Palette tokens are at the top of `src/styles/base.css`.
+
+## Company logos in the Hall
+
+Each company in the Hall shows its ticker built from solid cubes. To show the real logo instead, add a
+**single-colour SVG** you have the right to use as `src/assets/company-logos/<id>.svg` (ids are in
+`src/data/companies.js`, e.g. `apple.svg`, `google.svg`). It is extruded into a solid 3D mark automatically.
+Simple, filled shapes work best (no gradients or text).
 
 ## Architecture notes (performance spec)
 

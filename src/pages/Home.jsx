@@ -4,7 +4,8 @@ import { live, kick, snap } from '../lib/live'
 import { load, save } from '../lib/persist'
 import { revealPage, useGo } from '../lib/nav'
 import { profile } from '../data/profile'
-import Nav from './home/Nav'
+import SiteNav from '../components/SiteNav'
+import { home } from '../data/profile'
 import Hero from './home/Hero'
 import Preloader from './home/Preloader'
 
@@ -33,9 +34,16 @@ export default function Home() {
   /* ---- mount / re-entry ---- */
   useLayoutEffect(() => {
     const saved = load('home')
+    const target = location.state?.scrollTo // e.g. "contact" from another page's nav
     const resume = !!saved && (location.state?.resume || navType === 'POP')
     const H = live.hero
-    if (resume || H.t >= 1) {
+    if (target) {
+      H.requested = true; H.start = H.start || 1; H.t = 1
+      setPhase('done'); setIntro(false)
+      const y = () => (document.getElementById(target)?.offsetTop ?? 0)
+      if (belowReady.current) restoreTo(y())
+      else pending.current = y
+    } else if (resume || H.t >= 1) {
       // returning: everything already assembled
       H.requested = true; H.start = H.start || 1; H.t = 1
       setPhase('done'); setIntro(false)
@@ -74,7 +82,7 @@ export default function Home() {
   const onBelowReady = useCallback(() => {
     belowReady.current = true
     if (pending.current == null) return
-    const y = pending.current
+    const y = typeof pending.current === 'function' ? pending.current() : pending.current
     pending.current = null
     restoreTo(y)
   }, [restoreTo])
@@ -129,7 +137,16 @@ export default function Home() {
 
   return (
     <main className="home">
-      <Nav active={active} onJump={jump} onHall={() => leave('/hall')} scrolled={scrolled} hidden={phase === 'wait'} />
+      <SiteNav
+        links={[
+          ...home.nav.map((n) => ({ id: n.id, label: n.label, active: active === n.id, onClick: () => jump(n.id) })),
+          { id: 'analytics', label: 'Analytics', href: '/analytics', onClick: () => leave('/analytics') },
+        ]}
+        cta={{ label: 'Analytics Hall ↗', onClick: () => leave('/hall') }}
+        onName={() => jump('home')}
+        scrolled={scrolled}
+        hidden={phase === 'wait'}
+      />
       <Hero ref={sectionRef('home')} phase={phase} onDown={() => jump('about')} onContact={() => jump('contact')} />
       <Suspense fallback={<div className="h-below-fallback" />}>
         <Below go={leave} onReady={onBelowReady} sectionRef={sectionRef} />

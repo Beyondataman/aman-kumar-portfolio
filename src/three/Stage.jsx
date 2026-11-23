@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, PerformanceMonitor } from '@react-three/drei'
-import { EffectComposer, Bloom, Vignette, DepthOfField } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useStore } from '../lib/store'
 import { live } from '../lib/live'
@@ -10,7 +10,7 @@ import { rig } from './rig'
 import { k } from './util'
 import HeroWorld from './HeroWorld'
 
-// Worlds other than the story are code-split and mounted on first visit only.
+// The Hall islands and the dashboard backdrop are code-split and mounted on first visit only.
 const HallWorld = lazy(() => import('./HallWorld'))
 const WorkspaceWorld = lazy(() => import('./WorkspaceWorld'))
 
@@ -201,33 +201,10 @@ function LightRig({ shadows }) {
 function Effects({ tier, route }) {
   const T = TIERS[tier]
   if (!T.effects) return null
-  // DOF only in the hall, only on capable devices.
-  if (T.dof && route === 'hall') return <HallComposer />
   return (
     <EffectComposer multisampling={tier === 'high' ? 4 : 2} enableNormalPass={false}>
       <Bloom mipmapBlur luminanceThreshold={0.62} luminanceSmoothing={0.25} intensity={0.8} radius={0.72} />
       <Vignette offset={0.24} darkness={0.92} />
-    </EffectComposer>
-  )
-}
-
-function HallComposer() {
-  const tier = useStore((s) => s.tier)
-  const dof = useRef()
-  const scale = useRef(0)
-  useFrame((_, dtRaw) => {
-    const e = dof.current
-    if (!e) return
-    const dt = Math.min(dtRaw, 0.1)
-    scale.current += ((rig.focusOn ? 2.4 : 0.6) - scale.current) * k(3, dt)
-    e.bokehScale = scale.current
-    if (e.target) e.target.copy(rig.focus)
-  })
-  return (
-    <EffectComposer multisampling={tier === 'high' ? 4 : 2} enableNormalPass={false}>
-      <DepthOfField ref={dof} target={[0, 0, -500]} worldFocusRange={7} bokehScale={1} />
-      <Bloom mipmapBlur luminanceThreshold={0.62} luminanceSmoothing={0.25} intensity={0.75} radius={0.72} />
-      <Vignette offset={0.24} darkness={0.9} />
     </EffectComposer>
   )
 }

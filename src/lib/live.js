@@ -19,12 +19,8 @@ export const live = {
     diveTarget: 0,
   },
   hall: {
-    t: 0, // 0..1 gallery scroll position
+    slots: new Map(), // company id → the DOM element its 3D island sits behind
     hovered: null,
-    selected: null,
-    entering: null, // id being entered (camera flight)
-    enterStart: 0,
-    card: null, // screen anchor of the hovered pillar
   },
   workspace: { enterStart: 0 },
   hero: {

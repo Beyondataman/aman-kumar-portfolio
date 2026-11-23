@@ -19,15 +19,6 @@ export const useStore = create((set) => ({
   chapter: 0,
   setChapter: (chapter) => set({ chapter }),
 
-  // hall hover (for the DOM card + index)
-  hallHovered: null,
-  setHallHovered: (hallHovered) => set({ hallHovered }),
-  hallSelected: null,
-  setHallSelected: (hallSelected) => set({ hallSelected }),
-
-  // the Hall page registers how a pillar click is handled (3D world → router)
-  hallActivate: null,
-
   // workspace backdrop: the company's revenue columns
   wsBars: [],
   setWsBars: (wsBars) => set({ wsBars }),

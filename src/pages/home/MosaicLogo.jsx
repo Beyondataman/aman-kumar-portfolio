@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react'
  * squares leave and the new ones assemble with a randomly chosen transition
  * (scatter · rise · wipe · pop).
  */
-const CELLS = 16
+const DEFAULT_CELLS = 16
 
 // generic, brand-free pictograms drawn on a 64×64 canvas
 const ICONS = {
@@ -47,6 +47,29 @@ const ICONS = {
     for (const x of [14, 26, 38]) g.fillRect(x, 30, 7, 18)
     g.globalCompositeOperation = 'source-over'
   },
+  question: (g) => {
+    g.lineWidth = 9; g.lineCap = 'round'
+    g.beginPath(); g.arc(32, 22, 13, Math.PI * 1.05, Math.PI * 2.35); g.lineTo(32, 40); g.stroke()
+    g.beginPath(); g.arc(32, 54, 5, 0, Math.PI * 2); g.fill()
+  },
+  database: (g) => {
+    for (const y of [12, 27, 42]) {
+      g.beginPath(); g.ellipse(32, y + 6, 22, 7, 0, 0, Math.PI * 2); g.fill()
+      g.fillRect(10, y + 6, 44, 9)
+    }
+    g.globalCompositeOperation = 'destination-out'
+    for (const y of [24, 39]) { g.beginPath(); g.ellipse(32, y, 22, 3, 0, 0, Math.PI); g.lineWidth = 3; g.stroke() }
+    g.globalCompositeOperation = 'source-over'
+  },
+  chart: (g) => {
+    g.fillRect(8, 40, 10, 16); g.fillRect(22, 30, 10, 26); g.fillRect(36, 18, 10, 38); g.fillRect(50, 8, 8, 48)
+  },
+  cube: (g) => {
+    g.beginPath(); g.moveTo(32, 6); g.lineTo(56, 18); g.lineTo(32, 30); g.lineTo(8, 18); g.closePath(); g.fill()
+    g.globalAlpha = 0.65; g.beginPath(); g.moveTo(8, 22); g.lineTo(30, 33); g.lineTo(30, 58); g.lineTo(8, 46); g.closePath(); g.fill()
+    g.globalAlpha = 0.4; g.beginPath(); g.moveTo(56, 22); g.lineTo(34, 33); g.lineTo(34, 58); g.lineTo(56, 46); g.closePath(); g.fill()
+    g.globalAlpha = 1
+  },
   pen: (g) => {
     g.beginPath(); g.moveTo(32, 6); g.lineTo(48, 30); g.lineTo(36, 58); g.lineTo(28, 58); g.lineTo(16, 30); g.closePath(); g.fill()
     g.globalCompositeOperation = 'destination-out'
@@ -55,11 +78,19 @@ const ICONS = {
   },
 }
 
-function sample(source, isIcon) {
+function sample(source, isIcon, CELLS = 16) {
   const S = 64
   const c = document.createElement('canvas'); c.width = c.height = S
   const g = c.getContext('2d', { willReadFrequently: true })
-  if (isIcon) {
+  if (isIcon && source.startsWith('text:')) {
+    // typographic monogram (e.g. a ticker) — no brand marks are drawn
+    const txt = source.slice(5)
+    let fs = 40
+    g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'
+    g.font = `900 ${fs}px "Inter Tight", "Arial Black", sans-serif`
+    while (g.measureText(txt).width > S * 0.9 && fs > 10) { fs -= 2; g.font = `900 ${fs}px "Inter Tight", "Arial Black", sans-serif` }
+    g.fillText(txt, S / 2, S / 2 + fs * 0.04)
+  } else if (isIcon) {
     g.fillStyle = g.strokeStyle = '#fff'
     ICONS[source]?.(g)
   } else {
@@ -108,11 +139,15 @@ function colour(b, r) {
 
 // sampled + coloured squares, cached per logo
 const cache = new Map()
-function loadCells(src, icon) {
-  const key = src || `icon:${icon}`
+function loadCells(src, icon, cells) {
+  const key = `${src || `icon:${icon}`}@${cells}`
   if (!cache.has(key)) {
     cache.set(key, new Promise((resolve) => {
-      const done = (source, isIcon) => resolve(sample(source, isIcon).map((c) => ({ ...c, fill: colour(c.b, c.r) })))
+      const done = (source, isIcon) => resolve(sample(source, isIcon, cells).map((c) => ({ ...c, fill: colour(c.b, c.r) })))
+      if (!src && icon?.startsWith('text:')) {
+        const go = () => done(icon, true)
+        return document.fonts?.load('900 40px "Inter Tight"').then(go, go) ?? go()
+      }
       if (!src) return done(icon, true)
       const img = new Image()
       img.onload = () => done(img, false)
@@ -130,7 +165,7 @@ const IN_MS = 760
 /** progress of one square: delay window `d` (0..1 of the phase) then a 0.45 ramp */
 const local = (t, d) => Math.min(1, Math.max(0, (t - d * 0.55) / 0.45))
 
-export default function MosaicLogo({ src, icon, size = 64, delay = 0 }) {
+export default function MosaicLogo({ src, icon, size = 64, delay = 0, cells: CELLS = DEFAULT_CELLS }) {
   const ref = useRef(null)
   const shown = useRef(null) // cells currently on screen
   const raf = useRef(0)
@@ -170,7 +205,7 @@ export default function MosaicLogo({ src, icon, size = 64, delay = 0 }) {
       g.globalAlpha = 1
     }
 
-    loadCells(src, icon).then((next) => {
+    loadCells(src, icon, CELLS).then((next) => {
       if (!alive) return
       const prev = shown.current
       shown.current = next
@@ -180,7 +215,7 @@ export default function MosaicLogo({ src, icon, size = 64, delay = 0 }) {
         const t0 = performance.now()
         const outMs = prev ? OUT_MS : 0
         const step = (now) => {
-          const el = now - t0
+          const el = Math.max(0, now - t0) // rAF time can precede t0
           g.clearRect(0, 0, cv.width, cv.height)
           if (el < outMs) paint(prev, el / outMs, 'out', style)
           else paint(next, Math.min(1, (el - outMs) / IN_MS), 'in', style)
@@ -194,7 +229,7 @@ export default function MosaicLogo({ src, icon, size = 64, delay = 0 }) {
       else start()
     })
     return () => { alive = false; clearTimeout(timer); cancelAnimationFrame(raf.current) }
-  }, [src, icon, size])
+  }, [src, icon, size, CELLS])
 
   return <canvas ref={ref} className="mlogo" style={{ width: size, height: size }} aria-hidden="true" />
 }

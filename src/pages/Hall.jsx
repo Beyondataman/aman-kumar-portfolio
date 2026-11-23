@@ -1,173 +1,143 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { useLocation, useNavigationType } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import { live, kick, snap } from '../lib/live'
+import { animate } from 'animejs'
+import { companies } from '../data/companies'
+import { income, YEARS } from '../cases/nvidia/data'
 import { load, save } from '../lib/persist'
-import { revealPage, useBack, useGo } from '../lib/nav'
-import { companies, companyById } from '../data/companies'
+import { live, kick } from '../lib/live'
+import { revealPage, useGo } from '../lib/nav'
+import SiteNav, { pageLinks } from '../components/SiteNav'
+import { profile } from '../data/profile'
+import HScrollTrack from '../templates/HScrollTrack'
+import { MotionRoot } from '../motion/motion'
+import { prefersReduced, useSplitReveal } from '../motion/anime'
+import { pad2, rich } from '../templates/rich'
+
+/** Figures shown on a panel must come from a sourced case dataset. */
+const PREVIEW = {
+  nvidia: { label: `Revenue, ${YEARS[0]}–${YEARS[YEARS.length - 1]} · USD`, values: YEARS.map((y) => ({ y, v: income[y].revenue })) },
+}
 
 /**
- * EXPERIENCE B — THE ANALYTICS HALL (route "/hall").
- * The 3D gallery lives in the shared canvas (three/HallWorld). This page is
- * the DOM layer: title, navigation, hover card, accessible company index,
- * and the scroll track that moves the camera through the hall.
+ * THE ANALYTICS HALL (route "/hall") — a horizontal gallery of company panels.
+ * Desktop: the page pins and scrolling moves the shelf sideways; phones: a
+ * swipe row. Opening a live case grows its panel to full screen, then the
+ * dashboard loads behind it. The scroll position is restored on return.
  */
 export default function Hall() {
+  const go = useGo()
   const location = useLocation()
   const navType = useNavigationType()
-  const go = useGo()
-  const back = useBack()
-  const hovered = useStore((s) => s.hallHovered)
-  const selected = useStore((s) => s.hallSelected)
-  const setHovered = useStore((s) => s.setHallHovered)
-  const setSelected = useStore((s) => s.setHallSelected)
-  const [notice, setNotice] = useState(null)
-  const card = useRef(null)
-  const bar = useRef(null)
+  const head = useRef(null)
+  useSplitReveal(head, { split: 'words', on: 'mount', step: 110, delay: 150 })
 
-  const maxScroll = () => Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
-  const update = useCallback(() => {
-    const t = Math.min(1, Math.max(0, window.scrollY / maxScroll()))
-    live.hall.t = t
-    if (bar.current) bar.current.style.transform = `scaleX(${t})`
-    save('hall', { t, selected: useStore.getState().hallSelected })
-  }, [])
-
-  // restore gallery position + selected company (also on browser back/forward)
+  // restore the shelf position when coming back from a dashboard (or Back/Forward)
   useLayoutEffect(() => {
-    live.hall.entering = null
-    const saved = load('hall')
-    if (saved) {
-      window.scrollTo(0, saved.t * maxScroll())
-      setSelected(saved.selected ?? null)
-    } else {
-      window.scrollTo(0, 0)
-    }
-    update()
-    snap(220)
+    const saved = load('hall2')
+    const back = navType === 'POP' || location.state?.from === 'workspace'
+    window.scrollTo(0, back && saved ? saved.y : 0)
+    requestAnimationFrame(() => { if (back && saved) window.scrollTo(0, saved.y) })
     revealPage()
-    void navType
-    return () => {
-      setHovered(null)
-      document.body.style.cursor = ''
-    }
+    const onScroll = () => { if (live.route === 'hall') save('hall2', { y: window.scrollY }) } // ignore the next page's scroll reset
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key])
 
+  // swipe row (phones): the 3D islands follow the panels, so render while it moves
   useEffect(() => {
-    let raf = 0
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; update() }) }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', onScroll) }
-  }, [update])
-
-  // hover card follows the focused pillar (no React re-render per frame)
-  useEffect(() => {
-    let raf
-    const loop = () => {
-      raf = requestAnimationFrame(loop)
-      const p = live.hall.card
-      if (!card.current || !p) return
-      const w = card.current.offsetWidth, h = card.current.offsetHeight
-      const x = Math.min(window.innerWidth - w - 16, Math.max(16, p.x + 12))
-      const y = Math.min(window.innerHeight - h - 96, Math.max(96, p.y - h / 2))
-      card.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
-    }
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
+    const row = document.querySelector('.hall2-track .t-track-row')
+    if (!row) return
+    const on = () => kick(500)
+    row.addEventListener('scroll', on, { passive: true })
+    return () => row.removeEventListener('scroll', on)
   }, [])
 
-  const activate = useCallback((id) => {
-    const c = companyById[id]
-    if (!c || live.hall.entering) return
-    setSelected(id)
-    save('hall', { t: live.hall.t, selected: id })
-    if (!c.caseStudy) {
-      setNotice(id)
-      kick(800)
-      return
-    }
-    setHovered(id)
-    live.hall.entering = id
-    live.hall.enterStart = performance.now()
-    kick(3000)
-    import('./Workspace') // warm the dashboard chunk during the camera flight
-    window.setTimeout(() => go(`/workspace/${id}`, { state: { from: 'hall' } }), 640)
-  }, [go, setHovered, setSelected])
-
-  useEffect(() => {
-    useStore.setState({ hallActivate: activate })
-    return () => useStore.setState({ hallActivate: null })
-  }, [activate])
-
-  useEffect(() => {
-    if (!notice) return
-    const t = setTimeout(() => setNotice(null), 3600)
-    return () => clearTimeout(t)
-  }, [notice])
-
-  const returnToStory = () => {
-    if (['home', 'story'].includes(location.state?.from) && window.history.state?.idx > 0) back()
-    else go('/', { state: { resume: true } })
-  }
-
-  const hc = hovered ? companyById[hovered] : null
+  const open = useCallback((c, el) => {
+    if (!c.caseStudy) return
+    save('hall2', { y: window.scrollY })
+    import('./Workspace') // warm the dashboard chunk while the panel expands
+    const to = `/workspace/${c.id}`
+    if (!el || prefersReduced()) { go(to, { state: { from: 'hall' } }); return }
+    // grow a copy of the panel to cover the screen, then hand over to the dashboard
+    const r = el.getBoundingClientRect()
+    const ghost = document.createElement('div')
+    ghost.className = 'hall-ghost'
+    Object.assign(ghost.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` })
+    document.body.appendChild(ghost)
+    animate(ghost, {
+      left: 0, top: 0, width: window.innerWidth, height: window.innerHeight, borderRadius: [26, 0],
+      duration: 620, ease: 'inOut(3)',
+      onComplete: () => {
+        go(to, { state: { from: 'hall' } }, 0)
+        setTimeout(() => ghost.remove(), 700)
+      },
+    })
+  }, [go])
 
   return (
-    <main className="hall">
-      <header className="hall-head">
-        <div>
-          <p className="kicker"><span className="mono">B</span> Experience</p>
-          <h1 className="display-m">The Analytics Hall</h1>
-          <p className="muted hall-sub">Explore companies, investigate business performance, and discover the stories hidden inside data.</p>
-        </div>
-        <nav className="hall-nav">
-          <button className="btn btn--ghost btn--sm" onClick={returnToStory}>← Back to Home</button>
-        </nav>
-      </header>
+    <MotionRoot>
+      <main className="pg hall2">
+        <SiteNav links={pageLinks(go, 'hall')} cta={{ label: 'Email me ↗', onClick: () => { window.location.href = `mailto:${profile.contact.email}` } }} onName={() => go('/', { state: { resume: true } })} />
+        <HScrollTrack
+          className="hall2-track"
+          label="Companies"
+          intro={
+            <div className="hall2-intro">
+              <p className="h-kicker">Case studies</p>
+              <h1 ref={head} className="h-giant hall2-title">{rich('The Analytics|*Hall*')}</h1>
+              <p className="hall2-lede">Company case studies built from primary filings. NVIDIA is open now; the rest are being researched.</p>
+              <p className="hall2-legend"><span><i className="dot" /> Case study live</span><span><i className="dot dot--hollow" /> In progress</span></p>
+            </div>
+          }
+          items={companies}
+          renderPanel={(c, i, { active }) => <CompanyPanel c={c} i={i} active={active} onOpen={open} />}
+        />
+      </main>
+    </MotionRoot>
+  )
+}
 
-      <aside ref={card} className={`hall-card ${hc ? 'is-on' : ''}`} aria-hidden={!hc}>
-        {hc && (
-          <>
-            <p className="mono muted">{hc.ticker} · {hc.sector}</p>
-            <h2>{hc.name}</h2>
-            <p className="hall-card-desc">{hc.description}</p>
-            {hc.caseStudy ? (
-              <p className="hall-card-status is-open"><span className="dot" /> Case study available <span className="kbd">click to enter ↵</span></p>
-            ) : (
-              <p className="hall-card-status"><span className="dot dot--hollow" /> Case study in progress</p>
-            )}
-          </>
-        )}
-      </aside>
-
-      <div className={`hall-notice ${notice ? 'is-on' : ''}`} role="status" aria-live="polite">
-        {notice && <><strong>{companyById[notice].name}</strong> — case study in progress. NVIDIA is open now; more companies are being researched.</>}
+function CompanyPanel({ c, i, active, onOpen }) {
+  const ref = useRef(null)
+  const p = PREVIEW[c.id]
+  const max = p ? Math.max(...p.values.map((d) => d.v)) : 1
+  const Tag = c.caseStudy ? 'button' : 'article'
+  return (
+    <Tag
+      ref={ref}
+      className={`cp ${c.caseStudy ? 'cp--live' : ''} ${active ? 'is-active' : ''}`}
+      onPointerEnter={() => { live.hall.hovered = c.id; kick(1500) }}
+      onPointerLeave={() => { if (live.hall.hovered === c.id) live.hall.hovered = null }}
+      {...(c.caseStudy ? { onClick: () => onOpen(c, ref.current), 'aria-label': `Open the ${c.name} case study` } : {})}
+    >
+      <div className="cp-top">
+        <span className="mono cp-n">{pad2(i + 1)}</span>
+        <span className="mono cp-ticker">{c.ticker}</span>
+        <span className={`cp-status ${c.caseStudy ? 'is-live' : ''}`}><i className={`dot ${c.caseStudy ? '' : 'dot--hollow'}`} />{c.caseStudy ? 'Case study live' : 'In progress'}</span>
       </div>
-
-      <footer className="hall-foot">
-        <div className="hall-track"><i ref={bar} /></div>
-        <p className="mono muted hall-hint">scroll to move through the hall · hover a pillar · click to enter</p>
-        <ul className="hall-index" aria-label="Companies in the hall">
-          {companies.map((c) => (
-            <li key={c.id}>
-              <button
-                className={`hi-btn ${hovered === c.id ? 'is-hot' : ''} ${selected === c.id ? 'is-sel' : ''} ${c.caseStudy ? 'is-open' : ''}`}
-                onPointerEnter={() => { setHovered(c.id); kick(1200) }}
-                onPointerLeave={() => setHovered(null)}
-                onFocus={() => { setHovered(c.id); kick(1200) }}
-                onBlur={() => setHovered(null)}
-                onClick={() => activate(c.id)}
-                aria-label={`${c.name}${c.caseStudy ? ' — open case study' : ' — case study in progress'}`}
-              >
-                <span className={`dot ${c.caseStudy ? '' : 'dot--hollow'}`} aria-hidden="true" />
-                {c.name}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </footer>
-      <div className="hall-scroll" aria-hidden="true" />
-    </main>
+      {/* the company's floating cube island (three/HallWorld) renders behind this slot */}
+      <div className="cp-stage" aria-hidden="true" ref={(el) => { if (el) live.hall.slots.set(c.id, el); else live.hall.slots.delete(c.id) }} />
+      <h2 className="cp-name">{c.name}</h2>
+      <p className="cp-sector">{c.sector}</p>
+      <p className="cp-desc">{c.description}</p>
+      {p ? (
+        <div className="cp-preview">
+          <span className="mono cp-plabel">{p.label}</span>
+          <div className="cp-bars">
+            {p.values.map((d, k) => (
+              <span key={d.y} className="cp-bar" style={{ '--h': d.v / max, '--k': k }}>
+                <i /><em className="mono">{d.y}</em>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="cp-wait mono">Figures will be added from the company's filings.</p>
+      )}
+      <div className="cp-foot">
+        {c.caseStudy ? <span className="h-pill h-pill--solid cp-open">Open case study ↗</span> : <span className="cp-soon mono">Coming soon</span>}
+      </div>
+    </Tag>
   )
 }

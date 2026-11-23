@@ -1,227 +1,284 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { MeshReflectorMaterial } from '@react-three/drei'
 import * as THREE from 'three'
+import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js'
+import { companies } from '../data/companies'
 import { useStore } from '../lib/store'
-import { live, kick } from '../lib/live'
+import { live } from '../lib/live'
 import { TIERS } from '../lib/quality'
-import { companies, HALL_EXTENT } from '../data/companies'
 import { rig } from './rig'
-import { applySurface, loadPieces } from './assets'
-import { clamp, ease, k, lerp, makePlateTexture, makeRadialTexture, toScreen } from './util'
-
-export const HALL_ORIGIN = new THREE.Vector3(0, 0, -500)
-const PILLAR_SIZE = 0.75 // overall pillar scale
-const PILLAR_W = 1.5 * PILLAR_SIZE
-const hOf = (c) => c.height * PILLAR_SIZE
+import { mulberry32 } from './util'
 
 /* ================================================================
- * THE ANALYTICS HALL — a minimal, architectural gallery.
- * One monolith per company, asymmetrical, different heights,
- * selective light, floor reflections, soft contact shadows, fog
- * for atmospheric depth and depth-of-field (high tier) on focus.
+ * ANALYTICS HALL — one floating island per company.
+ *  - a cloud-like base built from small cubes (the portrait's squares in 3D)
+ *  - the company mark on top: an extruded SVG logo if one is supplied in
+ *    src/assets/company-logos/<id>.svg, otherwise the ticker built from
+ *    solid voxel cubes (no brand artwork is drawn by hand)
+ *  - free cubes of the same size orbit, and every so often one flies in,
+ *    touches the mark and drifts back out
+ * Each island sits exactly behind its DOM panel: every frame it reads the
+ * panel's stage slot (live.hall.slots) and converts it to world space, so
+ * the 3D follows the horizontal gallery (pinned or swiped) perfectly.
  * ================================================================ */
+
+const LOGO_FILES = import.meta.glob('../assets/company-logos/*.svg', { eager: true, query: '?url', import: 'default' })
+const LOGOS = Object.fromEntries(Object.entries(LOGO_FILES).map(([p, u]) => [p.split('/').pop().replace('.svg', ''), u]))
+
+const CUBE = 0.13 // cube edge (world units at island scale 1)
+const STEP = 0.16 // grid pitch → small gaps like the mosaic
+const ISLAND_H = 3.4 // design height of an island (base + mark + orbit room)
+const CAM_Z = 12
+const MARK_Y = 0.85 // the mark floats just above the cloud's crowns
+
+// palette shared with the portrait (sRGB → used as linear-ish colours under ACES)
+const LO = new THREE.Color(0.07, 0.08, 0.13)
+const HI = new THREE.Color(0.82, 0.87, 1.0)
+const tone = (b, r, out) => {
+  out.copy(LO).lerp(HI, b).multiplyScalar(0.45 + 0.85 * b)
+  out.r *= 1 - 0.14 * r; out.g *= 1 - 0.08 * r; out.b *= 1 + 0.16 * r
+  return out.convertSRGBToLinear()
+}
+
+/** puffy cloud: union of flattened spheres, sampled on the cube grid */
+function buildCloud(seed, density) {
+  const r = mulberry32(seed)
+  // a long, low bank of puffs with a few rounded heads on top
+  const lumps = [
+    ...Array.from({ length: 6 }, (_, i) => ({
+      x: -1.35 + (i / 5) * 2.7 + (r() - 0.5) * 0.25,
+      y: -1.05 + (r() - 0.5) * 0.12,
+      z: (r() - 0.5) * 0.4,
+      rad: 0.5 + r() * 0.28 - Math.abs(i - 2.5) * 0.05,
+    })),
+    ...[-0.75, 0.05, 0.85].map((x) => ({ x: x + (r() - 0.5) * 0.3, y: -0.62 + r() * 0.1, z: (r() - 0.5) * 0.3, rad: 0.36 + r() * 0.14 })),
+  ]
+  const inside = (x, y, z) => lumps.some((l) => {
+    const dx = x - l.x, dy = (y - l.y) / 0.78, dz = z - l.z
+    return dx * dx + dy * dy + dz * dz < l.rad * l.rad
+  })
+  const pts = []
+  for (let x = -2.3; x <= 2.3; x += STEP) for (let y = -1.8; y <= -0.1; y += STEP) for (let z = -1.0; z <= 1.0; z += STEP) {
+    if (!inside(x, y, z)) continue
+    // keep the shell (what you see) and a sprinkle of the inside
+    const shell = !inside(x + STEP, y, z) || !inside(x - STEP, y, z) || !inside(x, y + STEP, z) || !inside(x, y - STEP, z) || !inside(x, y, z + STEP) || !inside(x, y, z - STEP)
+    if (!shell && r() > 0.08) continue
+    if (r() > density) continue
+    // lit from above like a cloud: brighter crowns, darker underside; shell cubes vary in size
+    const lift = Math.min(1, Math.max(0, (y + 1.6) / 1.3))
+    pts.push({ x, y, z, b: 0.22 + 0.45 * lift + 0.18 * r(), s: shell ? 0.7 + 0.35 * r() : 1, ph: r() * Math.PI * 2, f: 0.6 + r() * 0.9, r: r() })
+  }
+  return pts
+}
+
+/** ticker as solid voxels (3 cubes deep), drawn from the display font */
+function buildTickerVoxels(text) {
+  const H = 12
+  const c = document.createElement('canvas')
+  const g = c.getContext('2d', { willReadFrequently: true })
+  g.font = `900 ${H * 1.25}px "Inter Tight", "Arial Black", sans-serif`
+  const W = Math.ceil(g.measureText(text).width) + 2
+  c.width = W; c.height = H + 2
+  g.font = `900 ${H * 1.25}px "Inter Tight", "Arial Black", sans-serif`
+  g.fillStyle = '#fff'; g.textBaseline = 'middle'
+  g.fillText(text, 1, (H + 2) / 2 + 1)
+  const d = g.getImageData(0, 0, W, H + 2).data
+  const vox = []
+  const s = 0.105 // solid: cubes touch
+  for (let y = 0; y < H + 2; y++) for (let x = 0; x < W; x++) {
+    if (d[(y * W + x) * 4 + 3] < 110) continue
+    for (let z = 0; z < 3; z++) vox.push({ x: (x - W / 2) * s, y: ((H + 2) / 2 - y) * s, z: (z - 1) * s })
+  }
+  // fit to ~2.6 units wide
+  const scale = Math.min(1, 2.6 / (W * s))
+  return { vox, size: s * scale, scale }
+}
+
 export default function HallWorld() {
-  const route = useStore((s) => s.route)
-  const tier = useStore((s) => s.tier)
-  const visible = route === 'hall'
-  const T = TIERS[tier]
-
-  const shared = useMemo(() => ({
-    box: new THREE.BoxGeometry(1, 1, 1),
-    plane: new THREE.PlaneGeometry(1, 1),
-    stone: applySurface(new THREE.MeshStandardMaterial({ color: '#2a2c31', roughness: 0.45, metalness: 0.25, envMapIntensity: 0.55 }),
-      { scale: 0.9, bump: 0.01, roughMin: 0.32, roughMax: 0.55, tone: 0.14, bias: 2.0, key: 'pillar' }),
-    shadowTex: makeRadialTexture('rgba(0,0,0,0.9)', 'rgba(0,0,0,0)'),
-    poolTex: makeRadialTexture('rgba(170,190,255,0.5)', 'rgba(170,190,255,0)'),
-  }), [])
-  useEffect(() => () => {
-    shared.box.dispose(); shared.plane.dispose(); shared.stone.dispose()
-    shared.shadowTex.dispose(); shared.poolTex.dispose()
-  }, [shared])
-
-  const { size } = useThree()
-  // Blender-made bevelled monolith replaces the plain box once loaded
-  const [pillarGeo, setPillarGeo] = useState(null)
+  const [fontReady, setFontReady] = useState(false)
   useEffect(() => {
-    let alive = true
-    loadPieces().then((p) => { if (alive) { setPillarGeo(p.slab_bevel); kick(600) } }).catch(() => {})
-    return () => { alive = false }
+    // the voxel tickers are drawn from the display face: wait for it
+    const done = () => setFontReady(true)
+    document.fonts?.load('900 15px "Inter Tight"').then(done, done) ?? done()
   }, [])
+  const route = useStore((s) => s.route)
+  const baseTier = useStore((s) => s.baseTier)
+  const visible = route === 'hall'
+  const density = TIERS[baseTier].label === 'low' ? 0.55 : 1
 
-  useFrame((st, dtRaw) => {
+  useFrame(() => {
     if (!visible) return
-    const dt = Math.min(dtRaw, 0.1)
-    const P = live.pointer
-    const s = useStore.getState()
-    const hovered = s.hallHovered
-    const entering = live.hall.entering
-    const t = live.hall.t
-    const camX = lerp(HALL_EXTENT.minX + 3.5, HALL_EXTENT.maxX - 3.5, t)
-
-    // camera path: a slow lateral track through the gallery
-    const O = HALL_ORIGIN
-    const aspect = size.width / size.height
-    const back = aspect < 1.2 ? (1.2 / aspect - 1) * 9 : 0 // portrait screens: step back to keep several pillars in view
-    rig.cam.pos.set(O.x + camX + P.x * 0.7, 3.7 + back * 0.25 + P.y * 0.35, O.z + 14.5 + back)
-    rig.cam.look.set(O.x + camX, 2.7, O.z - 5)
-    rig.cam.lambda = 2.6
-    const focusId = entering || hovered || s.hallSelected || 'nvidia'
-    const fc = companies.find((c) => c.id === focusId)
-    if (hovered && !entering) {
-      rig.cam.look.x = lerp(rig.cam.look.x, O.x + fc.slot[0], 0.25)
-    }
-    if (entering) {
-      const e = ease(clamp((performance.now() - live.hall.enterStart) / 900))
-      rig.cam.pos.lerp(new THREE.Vector3(O.x + fc.slot[0], hOf(fc) * 0.8, O.z + fc.slot[1] + 4.2), e)
-      rig.cam.look.lerp(new THREE.Vector3(O.x + fc.slot[0], hOf(fc) * 0.85, O.z + fc.slot[1] - 2), e)
-      rig.cam.lambda = 4.5
-    }
-    rig.fog.near = 14; rig.fog.far = 42
-
-    // selective light on the focused company
+    rig.cam.pos.set(0, 0, CAM_Z)
+    rig.cam.look.set(0, 0, 0)
+    rig.cam.lambda = 6
+    rig.fog.near = 30; rig.fog.far = 90
     const L = rig.light
-    L.keyColor.set('#d6dbe6'); L.rimColor.set('#9aa6c4')
-    L.ambient = 0.55; L.key = 1.3; L.keyPos.set(O.x + camX - 10, 14, O.z + 10)
-    L.rim = 1.4; L.rimPos.set(O.x + camX, 6, O.z - 20)
-    L.spot = hovered || entering ? 140 : 95
-    L.spotColor.set(hovered || entering ? '#e6edff' : '#bccbff')
-    L.spotPos.set(O.x + fc.slot[0] + 1.5, hOf(fc) + 7, O.z + fc.slot[1] + 4)
-    L.spotTarget.set(O.x + fc.slot[0], hOf(fc) * 0.5, O.z + fc.slot[1])
-    L.point = 0; L.pointPos.set(O.x, -50, O.z)
-
-    rig.focus.set(O.x + fc.slot[0], hOf(fc) * 0.6, O.z + fc.slot[1])
-    rig.focusOn = !!(hovered || entering)
-
-    // hover card anchor (DOM reads this — no React re-render while moving)
-    if (hovered) {
-      const p = toScreen(new THREE.Vector3(O.x + fc.slot[0] + PILLAR_W * 0.9, hOf(fc) * 0.75, O.z + fc.slot[1]), st.camera, size)
-      live.hall.card = p
-    }
-    void dt
+    L.ambient = 0.35; L.key = 1.4; L.keyPos.set(-5, 7, 9); L.keyColor.set('#e8edff')
+    L.rim = 1.2; L.rimPos.set(4, 3, -8); L.rimColor.set('#7f9cff')
+    L.spot = 0; L.point = 0
   })
 
   return (
-    <group position={HALL_ORIGIN} visible={visible}>
-      {/* floor: reflective on capable devices, plain stone otherwise */}
-      <mesh rotation-x={-Math.PI / 2} position={[6, 0, -6]} receiveShadow>
-        <planeGeometry args={[90, 60]} />
-        {T.reflector && visible ? (
-          <MeshReflectorMaterial
-            blur={[300, 80]}
-            resolution={tier === 'high' ? 1024 : 512}
-            mixBlur={1}
-            mixStrength={1.6}
-            roughness={0.9}
-            depthScale={1.1}
-            minDepthThreshold={0.4}
-            maxDepthThreshold={1.4}
-            color="#0b0b0d"
-            metalness={0.55}
-            mirror={0.5}
-          />
-        ) : (
-          <meshStandardMaterial color="#0b0b0d" roughness={0.7} metalness={0.4} />
-        )}
-      </mesh>
-      {/* a back wall plane that catches the rim light — gives depth without a "museum" */}
-      <mesh position={[6, 9, -22]}>
-        <planeGeometry args={[90, 22]} />
-        <meshStandardMaterial color="#08080a" roughness={1} />
-      </mesh>
-      {companies.map((c, i) => (
-        <Pillar key={c.id} c={c} index={i} shared={shared} geo={pillarGeo || shared.box} visible={visible} shadows={TIERS[useStore.getState().baseTier].shadows} />
-      ))}
+    <group visible={visible}>
+      {fontReady && companies.map((c, i) => <Island key={c.id} c={c} index={i} density={density} active={visible} />)}
     </group>
   )
 }
 
-function Pillar({ c, index, shared, geo, visible, shadows }) {
-  const group = useRef(), body = useRef(), cap = useRef(), plate = useRef(), shadow = useRef(), pool = useRef()
-  const plateTex = useMemo(() => makePlateTexture(c, () => kick(300)), [c])
-  const mats = useMemo(() => ({
-    plate: new THREE.MeshBasicMaterial({ map: plateTex, transparent: true, toneMapped: false, depthWrite: false, opacity: 0.8 }),
-    cap: new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 1.2, 2.0), toneMapped: false }),
-    shadow: new THREE.MeshBasicMaterial({ map: shared.shadowTex, transparent: true, depthWrite: false, opacity: 0.8 }),
-    pool: new THREE.MeshBasicMaterial({ map: shared.poolTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }),
-  }), [plateTex, shared])
-  useEffect(() => () => { plateTex.dispose(); Object.values(mats).forEach((m) => m.dispose()) }, [plateTex, mats])
+function Island({ c, index, density, active }) {
+  const group = useRef()
+  const float = useRef()
+  const cloudRef = useRef()
+  const orbitRef = useRef()
+  const markRef = useRef()
+  const svgRef = useRef()
+  const size = useThree((s) => s.size)
+  const camera = useThree((s) => s.camera)
 
-  const anim = useRef({ fwd: 0, sink: 0, glow: c.featured ? 0.6 : 0.25, op: 0.8 })
-  const [x, z] = c.slot
-  const h = hOf(c)
+  const live_ = c.caseStudy
+  const cloud = useMemo(() => buildCloud(101 + index * 37, density), [index, density])
+  const orbit = useMemo(() => {
+    const r = mulberry32(900 + index * 13)
+    return Array.from({ length: 26 }, () => ({
+      rad: 1.45 + r() * 0.9, tilt: (r() - 0.5) * 0.8, speed: (0.25 + r() * 0.35) * (r() > 0.5 ? 1 : -1),
+      ph: r() * Math.PI * 2, y: 0.35 + r() * 1.0, b: 0.35 + r() * 0.55, r: r(),
+      dock: 0, dockTarget: null, // 0..1 progress of a visit to the mark
+    }))
+  }, [index])
+  const ticker = useMemo(() => (LOGOS[c.id] ? null : buildTickerVoxels(c.ticker)), [c])
+
+  const geo = useMemo(() => new THREE.BoxGeometry(CUBE, CUBE, CUBE), [])
+  const mat = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.38, metalness: 0.2, envMapIntensity: 0.8, emissive: new THREE.Color('#141a33'), emissiveIntensity: 1 }), [])
+  const markMat = useMemo(() => new THREE.MeshStandardMaterial({
+    roughness: 0.28, metalness: 0.55, envMapIntensity: 1.1,
+    color: live_ ? new THREE.Color('#dfe6ff') : new THREE.Color('#9aa3bd'),
+    emissive: new THREE.Color(live_ ? '#2b3a7a' : '#11152a'), emissiveIntensity: live_ ? 0.55 : 0.3,
+  }), [live_])
+  useEffect(() => () => { geo.dispose(); mat.dispose(); markMat.dispose() }, [geo, mat, markMat])
+
+  // static colours + the ticker voxels (written once)
+  useEffect(() => {
+    const col = new THREE.Color(), m = new THREE.Matrix4()
+    cloud.forEach((p, i) => cloudRef.current.setColorAt(i, tone(Math.min(1, p.b * (live_ ? 1 : 0.8)), p.r, col)))
+    cloudRef.current.instanceColor.needsUpdate = true
+    orbit.forEach((o, i) => orbitRef.current.setColorAt(i, tone(o.b, o.r, col)))
+    orbitRef.current.instanceColor.needsUpdate = true
+    if (ticker && markRef.current) {
+      const k = ticker.size / 0.105
+      ticker.vox.forEach((v, i) => {
+        m.makeScale(ticker.size / CUBE, ticker.size / CUBE, ticker.size / CUBE).setPosition(v.x * k, v.y * k, v.z * k)
+        markRef.current.setMatrixAt(i, m)
+      })
+      markRef.current.instanceMatrix.needsUpdate = true
+    }
+  }, [cloud, orbit, ticker, live_])
+
+  // optional supplied SVG logo → extruded solid
+  useEffect(() => {
+    const url = LOGOS[c.id]
+    if (!url) return
+    let alive = true
+    new SVGLoader().load(url, (data) => {
+      if (!alive || !svgRef.current) return
+      const shapes = data.paths.flatMap((p) => SVGLoader.createShapes(p))
+      const g = new THREE.ExtrudeGeometry(shapes, { depth: 18, bevelEnabled: true, bevelThickness: 2, bevelSize: 1.5, bevelSegments: 2 })
+      g.center(); g.computeBoundingBox()
+      const bb = g.boundingBox, w = bb.max.x - bb.min.x, h = bb.max.y - bb.min.y
+      const s = Math.min(2.4 / w, 1.5 / h)
+      g.scale(s, -s, s) // SVG y points down
+      svgRef.current.geometry?.dispose()
+      svgRef.current.geometry = g
+    })
+    return () => { alive = false }
+  }, [c.id])
+
+  const _m = useMemo(() => new THREE.Matrix4(), [])
+  const _p = useMemo(() => new THREE.Vector3(), [])
+  const _q = useMemo(() => new THREE.Quaternion(), [])
+  const _s = useMemo(() => new THREE.Vector3(1, 1, 1), [])
+  const _sc = useMemo(() => new THREE.Vector3(1, 1, 1), [])
+  const _e = useMemo(() => new THREE.Euler(), [])
 
   useFrame((st, dtRaw) => {
-    if (!visible) return
-    const dt = Math.min(dtRaw, 0.1)
-    const s = useStore.getState()
-    const hovered = s.hallHovered
-    const entering = live.hall.entering
-    const isHover = hovered === c.id
-    const isFocus = entering === c.id || isHover
-    const a = anim.current
-    const snap = performance.now() < live.snapUntil
-    const f = snap ? 1 : k(5, dt)
+    const gr = group.current
+    if (!gr) return
+    const el = active && live.hall.slots.get(c.id)
+    if (!el) { gr.visible = false; return }
+    const r = el.getBoundingClientRect()
+    const W = size.width, H = size.height
+    if (r.right < -40 || r.left > W + 40 || r.bottom < -40 || r.top > H + 40 || r.height < 10) { gr.visible = false; return }
+    gr.visible = true
 
-    const fwdT = entering === c.id ? 1.1 : isHover ? 0.7 : 0
-    const sinkT = entering && entering !== c.id ? 1.6 : 0
-    const glowT = isFocus ? 1.4 : c.featured || s.hallSelected === c.id ? 0.7 : 0.28
-    // never fade labels below readable levels
-    const opT = entering && entering !== c.id ? 0.25 : isFocus ? 1 : hovered ? 0.62 : c.featured ? 0.95 : 0.8
+    // DOM slot → world (z = 0 plane, camera straight on)
+    const unit = (2 * CAM_Z * Math.tan((camera.fov * Math.PI) / 360)) / H
+    gr.position.set((r.left + r.width / 2 - W / 2) * unit, (H / 2 - (r.top + r.height / 2)) * unit, 0)
+    gr.scale.setScalar(Math.min(r.height / ISLAND_H, r.width / 5.2) * unit)
 
-    a.fwd += (fwdT - a.fwd) * f
-    a.sink += (sinkT - a.sink) * f
-    a.glow += (glowT - a.glow) * f
-    a.op += (opT - a.op) * f
+    const t = st.clock.elapsedTime + index * 1.7
+    const dt = Math.min(0.05, dtRaw)
+    const hot = live.hall.hovered === c.id ? 1 : 0
+    const reduced = live.reducedMotion
 
-    group.current.position.set(x, -a.sink, z + a.fwd)
-    cap.current.material.color.setRGB(0.9 * a.glow, 1.2 * a.glow, 2.0 * a.glow)
-    plate.current.material.opacity = a.op
-    pool.current.material.opacity = clamp((a.glow - 0.3) * 0.5, 0, 0.5)
-    // the name plate turns gently toward the viewer
-    const camLocalX = st.camera.position.x - (HALL_ORIGIN.x + x)
-    const camLocalZ = st.camera.position.z - (HALL_ORIGIN.z + z)
-    plate.current.rotation.y = Math.atan2(camLocalX, camLocalZ) * 0.6
-    const bob = live.reducedMotion ? 0 : Math.sin(st.clock.elapsedTime * 0.8 + index) * 0.04
-    plate.current.position.y = h + 0.85 + bob
+    // the whole island floats; the mark sways
+    float.current.position.y = -0.15 + (reduced ? 0 : Math.sin(t * 0.7) * 0.08)
+    float.current.rotation.y = reduced ? 0 : Math.sin(t * 0.25) * 0.22 + live.pointer.x * 0.12 * hot
+    float.current.rotation.x = reduced ? 0 : Math.sin(t * 0.31) * 0.04
+
+    // cloud cubes breathe individually
+    cloud.forEach((p, i) => {
+      const w = reduced ? 0 : Math.sin(t * p.f + p.ph)
+      _p.set(p.x, p.y + 0.45 + w * 0.025, p.z)
+      _q.setFromEuler(_e.set(w * 0.08, w * 0.12, 0))
+      _m.compose(_p, _q, _sc.setScalar(p.s))
+      cloudRef.current.setMatrixAt(i, _m)
+    })
+    cloudRef.current.instanceMatrix.needsUpdate = true
+
+    // orbiting cubes; now and then one visits the mark and floats back out
+    const voxels = ticker?.vox
+    const k = ticker ? ticker.size / 0.105 : 1
+    orbit.forEach((o, i) => {
+      const a = o.ph + t * o.speed * (1 + hot * 1.2)
+      let x = Math.cos(a) * o.rad, z = Math.sin(a) * o.rad * 0.55
+      let y = o.y + Math.sin(a) * o.tilt + Math.sin(t * 0.9 + o.ph) * 0.06
+      if (!reduced) {
+        if (!o.dockTarget && Math.random() < dt * 0.025) {
+          const v = voxels ? voxels[Math.floor(Math.random() * voxels.length)] : { x: (Math.random() - 0.5) * 2, y: 0, z: 0 }
+          o.dockTarget = { x: v.x * k, y: v.y * k + MARK_Y, z: (v.z * k) + 0.2 } // land on the front face
+          o.dock = 0
+        }
+        if (o.dockTarget) {
+          o.dock += dt / 3.2
+          const u = o.dock < 0.4 ? o.dock / 0.4 : o.dock < 0.6 ? 1 : 1 - (o.dock - 0.6) / 0.4
+          const e = u * u * (3 - 2 * u)
+          x += (o.dockTarget.x - x) * e; y += (o.dockTarget.y - y) * e; z += (o.dockTarget.z - z) * e
+          if (o.dock >= 1) o.dockTarget = null
+        }
+      }
+      _p.set(x, y, z)
+      _q.setFromEuler(_e.set(t * 0.6 + o.ph, t * 0.4 + o.ph, 0))
+      _m.compose(_p, _q, _s)
+      orbitRef.current.setMatrixAt(i, _m)
+    })
+    orbitRef.current.instanceMatrix.needsUpdate = true
+
+    // the mark: gentle bob, brighter while hovered
+    markMat.emissiveIntensity += ((live_ ? 0.55 : 0.3) + hot * 0.4 - markMat.emissiveIntensity) * Math.min(1, dt * 4)
   })
 
-  const activate = (e) => {
-    e.stopPropagation()
-    // touch: first tap focuses (shows the description), second tap enters
-    const touch = e.nativeEvent?.pointerType === 'touch' || e.pointerType === 'touch'
-    if (touch && useStore.getState().hallHovered !== c.id) {
-      useStore.getState().setHallHovered(c.id)
-      kick(1500)
-      return
-    }
-    useStore.getState().hallActivate?.(c.id)
-  }
-  const over = (e) => {
-    e.stopPropagation()
-    if (live.hall.entering) return
-    useStore.getState().setHallHovered(c.id)
-    document.body.style.cursor = 'pointer'
-    kick(1500)
-  }
-  const out = () => {
-    if (useStore.getState().hallHovered === c.id) useStore.getState().setHallHovered(null)
-    document.body.style.cursor = ''
-    kick(1200)
-  }
-
   return (
-    <group ref={group} position={[x, 0, z]}>
-      <mesh ref={body} geometry={geo} material={shared.stone} position={[0, h / 2, 0]} scale={[PILLAR_W, h, PILLAR_W]}
-        castShadow={shadows} receiveShadow={shadows} onPointerOver={over} onPointerOut={out} onClick={activate} />
-      {/* luminous cap — the pillar's "selective illumination" */}
-      <mesh ref={cap} geometry={shared.box} material={mats.cap} position={[0, h + 0.015, 0]} scale={[PILLAR_W + 0.02, 0.03, PILLAR_W + 0.02]} />
-      {/* logo / name plate integrated as a floating 3D plane */}
-      <mesh ref={plate} geometry={shared.plane} material={mats.plate} position={[0, h + 0.85, 0]} scale={[2.2, 0.94, 1]}
-        onPointerOver={over} onPointerOut={out} onClick={activate} />
-      {/* soft contact shadow + warm light pool */}
-      <mesh ref={shadow} geometry={shared.plane} material={mats.shadow} rotation-x={-Math.PI / 2} position={[0.2, 0.01, 0.28]} scale={[3.2, 3.2, 1]} />
-      <mesh ref={pool} geometry={shared.plane} material={mats.pool} rotation-x={-Math.PI / 2} position={[0, 0.02, 0.9]} scale={[3.8, 3.8, 1]} />
+    <group ref={group} visible={false}>
+      <group ref={float} position-y={-0.15}>
+        <instancedMesh ref={cloudRef} args={[geo, mat, cloud.length]} frustumCulled={false} />
+        <instancedMesh ref={orbitRef} args={[geo, mat, orbit.length]} frustumCulled={false} />
+        <group position={[0, MARK_Y, 0]}>
+          {ticker ? (
+            <instancedMesh ref={markRef} args={[geo, markMat, ticker.vox.length]} frustumCulled={false} />
+          ) : (
+            <mesh ref={svgRef} material={markMat} />
+          )}
+        </group>
+      </group>
     </group>
   )
 }

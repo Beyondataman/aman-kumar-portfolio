@@ -98,7 +98,8 @@ const STAR_FRAG = /* glsl */ `
 
 export default function HeroWorld() {
   const route = useStore((s) => s.route)
-  const visible = route === 'story'
+  const isHome = route === 'story'
+  const visible = route !== 'workspace' // the star field is the backdrop of every other page
   const size = useThree((s) => s.size)
   const dpr = useThree((s) => s.viewport.dpr)
   const camera = useThree((s) => s.camera)
@@ -182,11 +183,13 @@ export default function HeroWorld() {
     const hoverTarget = coarse || live.reducedMotion ? 0 : 1
     mat.uniforms.uHover.value += (hoverTarget - mat.uniforms.uHover.value) * Math.min(1, dtRaw * 3)
     starMat.uniforms.uTime.value = state.clock.elapsedTime
-    starMat.uniforms.uFade.value += ((H.start ? 1 : 0) * (1 - (H.scatter ?? 0)) - starMat.uniforms.uFade.value) * Math.min(1, dtRaw * 2)
-    if (points.current) points.current.visible = H.ready && (H.scatter ?? 0) < 0.999
+    const starTarget = isHome ? (H.start ? 1 : 0) * (1 - (H.scatter ?? 0) * 0.6) : 0.75
+    starMat.uniforms.uFade.value += (starTarget - starMat.uniforms.uFade.value) * Math.min(1, dtRaw * 2)
+    if (points.current) points.current.visible = isHome && H.ready && (H.scatter ?? 0) < 0.999
 
-    // camera: straight on, very slight parallax with the pointer
-    rig.cam.pos.set(live.pointer.x * 0.12, live.pointer.y * 0.08, 12)
+    if (route === 'hall') return // the Hall drives the camera itself
+    // camera: straight on, very slight parallax with the pointer (home only)
+    rig.cam.pos.set(isHome ? live.pointer.x * 0.12 : 0, isHome ? live.pointer.y * 0.08 : 0, 12)
     rig.cam.look.set(0, 0, 0)
     rig.cam.lambda = 3
     rig.fog.near = 30; rig.fog.far = 80

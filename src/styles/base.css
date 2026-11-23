@@ -104,42 +104,6 @@ img { max-width: 100%; display: block; }
 @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
 
 /* =========================================================
-   Analytics Hall (DOM layer)
-   ========================================================= */
-.hall { position: relative; z-index: 1; }
-.hall-scroll { height: 300vh; }
-.hall-head { position: fixed; top: 0; left: 0; right: 0; z-index: 10; display: flex; justify-content: space-between; align-items: flex-start; padding: 26px 4vw; pointer-events: none; background: linear-gradient(to bottom, rgba(5, 5, 6, 0.7), transparent); }
-.hall-head > * { pointer-events: auto; }
-.hall-head .display-m { margin-bottom: 8px; }
-.hall-sub { max-width: 30em; margin: 0; font-size: 0.95rem; }
-.hall-card {
-  position: fixed; left: 0; top: 0; z-index: 12; width: 320px; padding: 18px 20px; border-radius: 14px;
-  background: rgba(14, 15, 19, 0.82); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(14px);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55); opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
-}
-.hall-card.is-on { opacity: 1; }
-.hall-card h2 { font: 800 1.7rem/1 var(--f-display); margin: 6px 0 10px; letter-spacing: -0.02em; }
-.hall-card .mono { font-size: 0.7rem; }
-.hall-card-desc { margin: 0 0 14px; font-size: 0.9rem; color: var(--ink-2); }
-.hall-card-status { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--muted); }
-.hall-card-status.is-open { color: var(--ink); }
-.kbd { margin-left: auto; font: 400 0.68rem var(--f-mono); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; color: var(--ink-2); animation: nudge 1.6s ease-in-out infinite; }
-@keyframes nudge { 50% { transform: translateX(3px); } }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; flex: none; box-shadow: 0 0 10px rgba(143, 168, 255, 0.6); }
-.dot--hollow { background: transparent; border: 1px solid var(--muted); box-shadow: none; }
-.hall-notice { position: fixed; left: 50%; bottom: 128px; transform: translate(-50%, 10px); z-index: 12; padding: 12px 18px; border-radius: 10px; background: rgba(14, 15, 19, 0.92); border: 1px solid var(--line); font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s var(--ease); max-width: min(560px, 90vw); text-align: center; }
-.hall-notice.is-on { opacity: 1; transform: translate(-50%, 0); }
-.hall-foot { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 18px 4vw 22px; background: linear-gradient(to top, rgba(5, 5, 6, 0.85), transparent); }
-.hall-track { height: 2px; background: rgba(255, 255, 255, 0.1); margin-bottom: 12px; overflow: hidden; }
-.hall-track i { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
-.hall-hint { margin: 0 0 10px; font-size: 0.68rem; }
-.hall-index { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.hi-btn { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(10, 10, 12, 0.6); color: var(--ink-2); cursor: pointer; font-size: 0.82rem; transition: border-color 0.2s, color 0.2s, background 0.2s; }
-.hi-btn:hover, .hi-btn.is-hot { color: var(--ink); border-color: rgba(255, 255, 255, 0.35); }
-.hi-btn.is-open { color: var(--ink); }
-.hi-btn.is-sel { border-color: var(--accent); }
-
-/* =========================================================
    Pages (project detail, 404)
    ========================================================= */
 .page { position: relative; z-index: 2; max-width: 1120px; margin: 0 auto; padding: 110px 6vw 120px; }
@@ -171,8 +135,6 @@ img { max-width: 100%; display: block; }
    ========================================================= */
 @media (max-width: 900px) {
   .project-grid { grid-template-columns: 1fr; }
-  .hall-card { width: min(320px, 86vw); }
-  .hall-sub { display: none; }
   .scroll-cue { display: none; }
 }
 

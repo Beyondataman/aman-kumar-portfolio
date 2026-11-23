@@ -14,6 +14,7 @@ import '@fontsource/jetbrains-mono/latin-600.css'
 import './styles/base.css'
 import './styles/templates.css'
 import './styles/home.css'
+import './styles/pages.css'
 
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 
