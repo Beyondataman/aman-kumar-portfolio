@@ -32,6 +32,46 @@ if hn:
     small = np.isin(hl, [i + 1 for i, sz in enumerate(sizes) if sz < 400])
     subject = subject | small
 subject = ndi.binary_opening(subject, structure=st, iterations=2)  # drop specks
+
+# smooth the hair silhouette: a large round closing on the head only, so stray
+# tufts and the gaps between them read as one continuous curve in the mosaic
+head = int(H * 0.44)
+yy, xx = np.mgrid[-26:27, -26:27]
+disk = (xx * xx + yy * yy) <= 26 * 26
+top = np.pad(subject[:head + 40], 30, mode='edge')
+top = ndi.binary_closing(top, structure=disk)[30:-30, 30:-30]
+subject[:head] = top[:head]
+
+# then make the crown a convex dome (no dips between tufts): above the
+# forehead, fill each column down from the upper convex hull of the hair line
+crown = int(H * 0.25)
+hair = subject.copy()  # before the dome: colours come from real hair only
+cols = [x for x in range(W) if subject[:crown, x].any()]
+if cols:
+    pts = [(x, int(np.argmax(subject[:crown, x]))) for x in cols]
+    hull = []  # upper hull (smallest y) with a monotone chain
+    for p in pts:
+        while len(hull) >= 2 and ((hull[-1][0] - hull[-2][0]) * (p[1] - hull[-2][1]) - (hull[-1][1] - hull[-2][1]) * (p[0] - hull[-2][0])) <= 0:
+            hull.pop()
+        hull.append(p)
+    hx = np.array([h[0] for h in hull]); hy = np.array([h[1] for h in hull])
+    for x, y0 in pts:
+        ytop = int(round(np.interp(x, hx, hy)))
+        subject[ytop:y0, x] = True  # only the gap between the hull and the hair
+
+# no white fringe: pixels near/outside the edge take the colour of the nearest
+# interior pixel, so partly-transparent edge cells are not tinted by the backdrop
+inner = ndi.binary_erosion(hair, structure=st, iterations=3)
+# around the crown, backdrop shows through the strands: only dark hair may donate colour
+donor = inner.copy()
+donor[:int(H * 0.3)] &= a[:int(H * 0.3)] < 0.35
+_, (iy, ix) = ndi.distance_transform_edt(~donor, return_indices=True)
+garr = np.asarray(g)
+edge_dist = ndi.distance_transform_edt(subject)
+crown_band = np.zeros_like(subject); crown_band[:int(H * 0.3)] = True
+see_through = crown_band & (a > 0.5) & (edge_dist < 30)  # backdrop between strands
+keep = inner & ~see_through
+g = Image.fromarray(np.where(keep, garr, garr[iy, ix]))
 alpha = Image.fromarray((subject * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.2))
 rgba = Image.merge('RGBA', [g, g, g, alpha])
 rgba.save(out, 'WEBP', quality=82, method=6, exact=False)

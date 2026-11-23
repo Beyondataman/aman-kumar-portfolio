@@ -6,11 +6,12 @@ import { profile, home, isTodo } from '../../data/profile'
 import { income, YEARS } from '../../cases/nvidia/data'
 import { rich, pad2 } from '../../templates/rich'
 import portraitUrl from '../../assets/aman-portrait.webp'
+import Extras from './Extras'
 
 /**
  * Everything below the hero, code-split so the first screen loads fast.
  * Sections: About (Intro + stack marquee) · Skills (numbered accordion) ·
- * Work (pinned rows) · Contact + footer.
+ * Work (pinned rows) · Contact (+ Extras skills panel) + footer.
  */
 export default function Below({ go, onReady, sectionRef }) {
   useLayoutEffect(() => { onReady?.() }, [onReady])
@@ -269,12 +270,6 @@ function Contact({ ref, go }) {
   useSplitReveal(head, { split: 'words', on: 'view', step: 100 })
   useReveal(left, { selector: '[data-in]', on: 'view', step: 90, delay: 250 })
   const c = profile.contact
-  const [form, setForm] = useState({ name: '', message: '' })
-  const mailto = (subject, body) => `mailto:${c.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  const send = (e) => {
-    e.preventDefault()
-    window.location.href = mailto(`Hello from ${form.name || 'your portfolio'}`, form.message)
-  }
   const links = [['LinkedIn', c.linkedin], ['GitHub', c.github], ['Résumé', c.resume]].filter(([, v]) => v && !isTodo(v))
   return (
     <section ref={ref} id="contact" className="hm-sec h-contact" aria-labelledby="contact-title">
@@ -291,18 +286,7 @@ function Contact({ ref, go }) {
             ))}
           </div>
         </div>
-        <form className="h-form" onSubmit={send}>
-          <label>
-            <span className="mono">Your name</span>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" />
-          </label>
-          <label>
-            <span className="mono">Message</span>
-            <textarea rows={6} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-          </label>
-          <button className="h-pill h-pill--solid" type="submit">Write the email →</button>
-          <p className="h-form-note mono">Opens your email app with the message filled in. Nothing is sent from this site.</p>
-        </form>
+        <Extras />
       </div>
       <footer className="h-foot">
         <span>© 2026 {profile.name}. All rights reserved.</span>

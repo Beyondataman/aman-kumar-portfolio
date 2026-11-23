@@ -295,4 +295,46 @@ export const home = {
   ],
   contactTitle: 'Get in *touch*',
   contactText: 'For case studies, projects or opportunities — email is the fastest way to reach me.',
+  // Extras panel (beside "Get in touch"): the skills from the LinkedIn banner + extras.
+  // Each tile = mosaic logo + name (+ optional italic note).
+  // Logo files: src/assets/logos/<logo>.png|svg|webp with a transparent background
+  // (tools/cut_banner_logos.py cut them from the banner). Without a file the tile
+  // shows a generic mosaic pictogram (`icon`). No brand logos are drawn by hand.
+  extrasTitle: 'Extra *skills*',
+  extras: [
+    {
+      id: 'technology', label: 'Technology', em: '& systems',
+      items: [
+        { id: 'linux', name: 'Linux', logo: 'linux' },
+        { id: 'gnu', name: 'GNU/Linux', logo: 'gnu' },
+        { id: 'arch', name: 'Arch Linux', logo: 'arch' },
+        { id: 'debian', name: 'Debian', logo: 'debian' },
+        { id: 'kali', name: 'Kali Linux', logo: 'kali' },
+        { id: 'ubuntu', name: 'Ubuntu', logo: 'ubuntu', icon: 'terminal' },
+        { id: 'os', name: 'macOS & Windows', logo: 'macos-windows', icon: 'laptop' },
+        { id: 'git', name: 'Git & GitHub', note: 'Basic', logo: 'git', icon: 'branch' },
+        { id: 'troubleshooting', name: 'Computer Troubleshooting', logo: 'troubleshooting', icon: 'wrench' },
+      ],
+    },
+    {
+      id: 'code', label: 'Code', em: '& tools',
+      items: [
+        { id: 'python', name: 'Python', logo: 'python' },
+        { id: 'sql', name: 'SQL', logo: 'sql' },
+        { id: 'c', name: 'C', note: 'Programming Language', logo: 'c' },
+        { id: 'html', name: 'HTML', logo: 'html' },
+        { id: 'css', name: 'CSS', logo: 'css' },
+        { id: 'ai', name: 'Artificial Intelligence', logo: 'ai' },
+        { id: 'overleaf', name: 'Overleaf', logo: 'overleaf' },
+      ],
+    },
+    {
+      id: 'creative', label: 'Creative', em: '& visual',
+      items: [
+        { id: 'video', name: 'Video Editing', note: 'DaVinci Resolve', logo: 'videoediting' },
+        { id: 'photography', name: 'Photography', logo: 'photography', icon: 'camera' },
+        { id: 'design', name: 'Graphic & Poster Design', logo: 'design', icon: 'pen' },
+      ],
+    },
+  ],
 }

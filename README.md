@@ -111,6 +111,7 @@ Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), Je
 | `env-pieces.glb` | 4 bevelled architectural pieces (clean, chipped, stepped, split) — boolean cuts, 4-segment bevels, weighted normals |
 | `core-shard.glb` | crystalline shard (used by the v1 story; kept for reuse) |
 | `surface.webp` | **seamless** surface map baked in Cycles (R height · G roughness · B tone): layered 4D noise + Voronoi fracture seams. Baked at 2048², shipped as a 1024² WebP (~190 KB) |
+| `logos/*.png` | skill logos for the Extras panel, cut from the LinkedIn banner with `python3 tools/cut_banner_logos.py <banner.png> src/assets/logos` (background keyed out). Add more by dropping a transparent PNG/SVG named like the `logo` field in `home.extras` (`src/data/profile.js`); tiles without a file show a generic icon |
 | `aman-portrait.webp` | the hero portrait with an alpha mask (backdrop removed, collar/neck kept) — rebuild with `python3 tools/make_portrait_mask.py public/images/aman-portrait.jpg src/assets/aman-portrait.webp 0.76 12` |
 
 The surface is applied with **triplanar mapping** (`src/three/assets.js → applySurface`) using each piece's real scaled size,
