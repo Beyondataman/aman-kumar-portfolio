@@ -162,21 +162,6 @@
 .t-stat-l { margin-top: 10px; color: var(--ink-2); font-size: 0.9rem; }
 .t-stat-n { margin-top: 6px; color: var(--muted); font-size: 0.7rem; }
 
-/* ---------- /templates preview page ---------- */
-.tpl { max-width: 1240px; }
-.tpl-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4vh; }
-.tpl-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin: 10vh 0 2vh; padding-top: 16px; border-top: 1px dashed rgba(143, 168, 255, 0.35); font-size: 0.85rem; scroll-margin-top: 90px; }
-.tpl-label > .mono:first-child { color: var(--accent); text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.66rem; }
-.tpl-label strong { font: 600 0.95rem var(--f-mono); color: var(--ink); }
-.tpl-block { margin-bottom: 4vh; }
-.tpl-facts { margin: 0; display: grid; gap: 16px; }
-.tpl-facts dt { font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-.tpl-facts dd { margin: 0; }
-.tpl .t-track { margin-left: calc(50% - 50vw); width: 100vw; }
-.tpl-cs .cs-sec { padding-bottom: 6vh; }
-.tpl-cs .cs-content { max-width: 860px; }
-.tpl-foot { margin-top: 8vh; padding-top: 30px; border-top: 1px solid var(--line); }
-
 /* ---------- responsive ---------- */
 @media (max-width: 1000px) {
   .t-grid { grid-template-columns: repeat(min(var(--cols, 3), 2), minmax(0, 1fr)); }

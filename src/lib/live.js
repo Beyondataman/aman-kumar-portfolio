@@ -10,14 +10,6 @@ export const live = {
   idleFps: 30, // ambient frame rate when nothing is happening (0 = render only on demand)
   reducedMotion: false,
   snapUntil: 0, // until this timestamp damped values jump straight to their targets (used after restore)
-  story: {
-    c: 0, // continuous chapter position (chapter index + fraction)
-    intro: 0, // 0..1 time-based emergence of the core on first load
-    introStart: 0,
-    attractor: null, // {x,y} NDC — skill cluster the core is drawn toward
-    dive: 0, // 0..1 portal fly-through
-    diveTarget: 0,
-  },
   hall: {
     slots: new Map(), // company id → the DOM element its 3D island sits behind
     hovered: null,

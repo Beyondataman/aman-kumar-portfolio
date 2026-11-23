@@ -1,4 +1,4 @@
-"""Usage: python3 tools/make_portrait_mask.py public/images/aman-portrait.jpg src/assets/aman-portrait.webp [threshold=0.84] [close_radius=12] [preview]
+"""Usage: python3 tools/make_portrait_mask.py tools/source/aman-portrait.jpg src/assets/aman-portrait.webp [threshold=0.84] [close_radius=12] [preview]
 (the committed asset was made with threshold 0.76, radius 12)
 
 Build aman-portrait.webp with an alpha mask: white studio backdrop -> transparent.

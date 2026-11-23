@@ -18,6 +18,4 @@ export const rig = {
     point: 6,
     pointPos: new THREE.Vector3(0, 0, 0),
   },
-  focus: new THREE.Vector3(0, 0, 0), // depth-of-field target (hall)
-  focusOn: false,
 }

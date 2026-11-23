@@ -17,11 +17,10 @@ const WorkspaceWorld = lazy(() => import('./WorkspaceWorld'))
 /**
  * ONE persistent WebGL canvas for the whole site.
  * It is never unmounted, so there is exactly one GPU context and the
- * story object/environment are never re-created between routes.
+ * worlds are never re-created between routes.
  */
 export default function Stage() {
   const tier = useStore((s) => s.tier)
-  const baseTier = useStore((s) => s.baseTier)
   const route = useStore((s) => s.route)
   const worlds = useStore((s) => s.worlds)
   const T = TIERS[tier]
@@ -33,7 +32,6 @@ export default function Stage() {
       aria-hidden="true"
       frameloop="demand"
       dpr={[1, T.dpr]}
-      shadows={TIERS[baseTier].shadows}
       gl={{ antialias: true, powerPreference: 'high-performance', stencil: false, alpha: false }}
       camera={{ fov: 35, near: 0.1, far: 220, position: [0, 0, 12] }}
       eventSource={eventSource}
@@ -49,7 +47,7 @@ export default function Stage() {
       <RenderDriver />
       <Adaptive />
       <CameraRig />
-      <LightRig shadows={TIERS[baseTier].shadows} />
+      <LightRig />
       <Environment resolution={64} frames={1}>
         <Lightformer form="rect" intensity={2.2} color="#e4ebff" position={[-4, 3, 4]} scale={[6, 2, 1]} />
         <Lightformer form="rect" intensity={1.2} color="#9fb4ff" position={[5, -1, 3]} scale={[4, 4, 1]} />
@@ -67,7 +65,7 @@ export default function Stage() {
           <WorkspaceWorld />
         </Suspense>
       )}
-      <Effects tier={tier} route={route} />
+      <Effects tier={tier} />
     </Canvas>
   )
 }
@@ -142,7 +140,7 @@ function CameraRig() {
  * on route changes (that would force shader recompiles) — worlds only move
  * and re-tune them.
  */
-function LightRig({ shadows }) {
+function LightRig() {
   const amb = useRef(), key = useRef(), rim = useRef(), spot = useRef(), point = useRef()
   const target = useMemo(() => new THREE.Object3D(), [])
   // directional lights aim at whatever the active world is looking at
@@ -189,16 +187,13 @@ function LightRig({ shadows }) {
         penumbra={1}
         decay={1.6}
         color="#cdd8ff"
-        castShadow={shadows}
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0004}
       />
       <pointLight ref={point} intensity={6} distance={7} decay={2} color="#6f8cff" />
     </>
   )
 }
 
-function Effects({ tier, route }) {
+function Effects({ tier }) {
   const T = TIERS[tier]
   if (!T.effects) return null
   return (

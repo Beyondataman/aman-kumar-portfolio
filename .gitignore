@@ -1,9 +1,9 @@
 node_modules
 dist
-dist-hash
 dist-file
 OPEN-ME.html
 .DS_Store
 .vscode
 *.log
 Claude outputs/
+HANDOFF.md

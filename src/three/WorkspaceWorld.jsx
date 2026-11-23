@@ -75,7 +75,6 @@ export default function WorkspaceWorld() {
     L.rim = 1.0; L.rimPos.set(O.x, 5, O.z - 14)
     L.spot = 60; L.spotColor.set('#cfdcff'); L.spotPos.set(O.x, 9, O.z + 4); L.spotTarget.set(O.x, 0, O.z - 3)
     L.point = 0; L.pointPos.set(O.x, -50, O.z)
-    rig.focusOn = false
     // bars rise in with the entry flight
     if (barGroup.current) {
       barGroup.current.children.forEach((g, i) => {
