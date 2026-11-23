@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { companies } from '../data/companies'
 import { useStore } from '../lib/store'
 import { live } from '../lib/live'
@@ -26,9 +27,17 @@ const LOGO_FILES = import.meta.glob('../assets/company-logos/*.svg', { eager: tr
 const LOGOS = Object.fromEntries(Object.entries(LOGO_FILES).map(([p, u]) => [p.split('/').pop().replace('.svg', ''), u]))
 
 // brand colours for the 3D marks (Simple Icons values; Apple's black reads as polished silver on the dark page)
+// on a dark page the black wordmarks (Apple, AMD, Amazon's "a") use their official light/white versions
 const BRAND = {
-  nvidia: '#76B900', apple: '#d9dde6', google: 'google', meta: '#0467DF', amd: '#ED1C24',
-  microsoft: '#00A4EF', amazon: '#FF9900', tsmc: '#E60012',
+  nvidia: '#76B900', apple: '#d9dde6', google: 'multi', meta: '#0467DF', amd: '#eef0f4',
+  microsoft: 'multi', amazon: 'multi', tsmc: '#9aa3bd', // tsmc: neutral until its logo file is added
+}
+/** per-shape colours for multi-colour marks; `b` = the shape's bounds in SVG units (24-unit grid) */
+const SHAPE_COLOURS = {
+  // four squares: red, green / blue, yellow
+  microsoft: (b) => (b.cy < 12 ? (b.cx < 12 ? '#F25022' : '#7FBA00') : (b.cx < 12 ? '#00A4EF' : '#FFB900')),
+  // the "a" in white, the smile-arrow in Amazon orange
+  amazon: (b) => (b.cy > 15.5 ? '#FF9900' : '#eef0f4'),
 }
 const GOOGLE = { red: new THREE.Color('#EA4335'), yellow: new THREE.Color('#FBBC05'), green: new THREE.Color('#34A853'), blue: new THREE.Color('#4285F4') }
 /** colour each vertex of the extruded "G" by its angle, like the real four-colour mark */
@@ -168,7 +177,7 @@ function Island({ c, index, density, active }) {
   const mat = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.38, metalness: 0.2, envMapIntensity: 0.8, emissive: new THREE.Color('#141a33'), emissiveIntensity: 1 }), [])
   const brand = BRAND[c.id]
   const markMat = useMemo(() => {
-    const multi = brand === 'google'
+    const multi = brand === 'multi'
     const base = new THREE.Color(multi ? '#ffffff' : brand ?? '#9aa3bd')
     // analysed: full colour, polished, glowing; in progress: same colour, matte and dimmed
     if (!live_) base.multiplyScalar(0.62)
@@ -188,7 +197,7 @@ function Island({ c, index, density, active }) {
     const cv = document.createElement('canvas'); cv.width = cv.height = 128
     const g = cv.getContext('2d')
     const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64)
-    const hc = new THREE.Color(BRAND[c.id] && BRAND[c.id] !== 'google' ? BRAND[c.id] : '#8fa8ff')
+    const hc = new THREE.Color(BRAND[c.id] && BRAND[c.id] !== 'multi' ? BRAND[c.id] : '#8fa8ff')
     const sr = hc.getRGB({}, THREE.SRGBColorSpace)
     const rgb = `${Math.round(sr.r * 255)},${Math.round(sr.g * 255)},${Math.round(sr.b * 255)}`
     gr.addColorStop(0, `rgba(${rgb},0.5)`); gr.addColorStop(0.45, `rgba(${rgb},0.16)`); gr.addColorStop(1, `rgba(${rgb},0)`)
@@ -226,16 +235,33 @@ function Island({ c, index, density, active }) {
       if (!alive || !svgRef.current) return
       const shapes = data.paths.flatMap((p) => SVGLoader.createShapes(p))
       // Simple Icons are drawn on a 24-unit grid
-      const g = new THREE.ExtrudeGeometry(shapes, {
-        depth: 3.2, curveSegments: 18, bevelEnabled: true, bevelThickness: 0.55, bevelSize: 0.28, bevelSegments: 4,
-      })
+      const opts = { depth: 3.2, curveSegments: 18, bevelEnabled: true, bevelThickness: 0.55, bevelSize: 0.28, bevelSegments: 4 }
+      const painter = SHAPE_COLOURS[c.id]
+      let g
+      if (painter) {
+        // extrude each shape on its own so it can carry its own colour, then merge
+        const parts = shapes.map((sh) => {
+          const pg = new THREE.ExtrudeGeometry(sh, opts)
+          pg.computeBoundingBox()
+          const bb = pg.boundingBox
+          const col = new THREE.Color(painter({ cx: (bb.min.x + bb.max.x) / 2, cy: (bb.min.y + bb.max.y) / 2 }))
+          const n = pg.attributes.position.count, arr = new Float32Array(n * 3)
+          for (let i = 0; i < n; i++) { arr[i * 3] = col.r; arr[i * 3 + 1] = col.g; arr[i * 3 + 2] = col.b }
+          pg.setAttribute('color', new THREE.BufferAttribute(arr, 3))
+          return pg.index ? pg.toNonIndexed() : pg
+        })
+        g = mergeGeometries(parts)
+        parts.forEach((pg) => pg.dispose())
+      } else {
+        g = new THREE.ExtrudeGeometry(shapes, opts)
+      }
       g.center(); g.computeBoundingBox()
       const bb = g.boundingBox, w = bb.max.x - bb.min.x, h = bb.max.y - bb.min.y
       const [mw, mh] = live_ ? [2.7, 1.85] : [2.1, 1.35]
       const sc = Math.min(mw / w, mh / h)
       g.scale(sc, -sc, sc) // SVG y points down
       g.computeVertexNormals()
-      if (brand === 'google') paintGoogle(g)
+      if (c.id === 'google') paintGoogle(g)
       // front-face points for the visiting cubes
       const pos = g.attributes.position, zmax = (bb.max.z - bb.min.z) * sc / 2
       const pts = []

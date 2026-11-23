@@ -81,12 +81,17 @@ Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), Je
 
 ## Company logos in the Hall
 
-Each company floats on a cloud of cubes with its logo extruded into a solid 3D mark. The logo files are in
-`src/assets/company-logos/<id>.svg` (ids from `src/data/companies.js`). NVIDIA, Apple, Google, Meta and AMD come
-from [Simple Icons](https://simpleicons.org) (CC0 icon data; the marks remain trademarks of their owners, used here
-only to identify the companies analysed). Microsoft, Amazon and TSMC are not in that set, so they show their ticker in
-solid cubes; drop a single-colour SVG named `microsoft.svg`, `amazon.svg` or `tsmc.svg` in that folder to replace it.
-Each mark uses the brand colour (`BRAND` in `src/three/HallWorld.jsx`; Google is painted in its four colours). Analysed companies (`caseStudy: true`) get full colour, a polished finish, a glow and a halo; the rest are matte and dimmed.
+Each company floats on a cloud of cubes with its official logo extruded into a solid 3D mark, in its brand colours.
+The files are in `src/assets/company-logos/<id>.svg` (ids from `src/data/companies.js`): NVIDIA, Apple, Google, Meta
+and AMD from [Simple Icons](https://simpleicons.org) (current), Microsoft and Amazon from Simple Icons v7 (they were
+later removed from that set at the brands' request). The marks remain trademarks of their owners and are used only to
+identify the companies analysed (a note says so on the Hall page).
+
+**TSMC** still needs its file: save TSMC's logo as a single-colour SVG named `tsmc.svg` in that folder (for example the
+"monochrome" SVG on companieslogo.com/tsmc/logo, or from tsmc.com's press kit) and it becomes a solid 3D logo; set its
+colour in `BRAND` in `src/three/HallWorld.jsx` (`'#E60012'`). Colours: `BRAND`, and `SHAPE_COLOURS` for multi-colour
+marks (Microsoft's four squares, Amazon's orange smile; Google is painted in its four colours).
+Analysed companies (`caseStudy: true`) get full colour, a polished finish, a glow and a halo; the rest are matte and dimmed.
 
 ## Architecture notes (performance spec)
 
