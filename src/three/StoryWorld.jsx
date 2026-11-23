@@ -270,18 +270,18 @@ export default function StoryWorld({ envCount }) {
   }), [])
   const mats = useMemo(() => ({
     // Blender-baked surface (triplanar): fractured-stone height, roughness and tone at 2048²
-    env: applySurface(new THREE.MeshStandardMaterial({ color: '#2a2624', roughness: 0.5, metalness: 0.45, envMapIntensity: 0.7 }),
+    env: applySurface(new THREE.MeshStandardMaterial({ color: '#24262b', roughness: 0.5, metalness: 0.45, envMapIntensity: 0.7 }),
       { scale: 0.4, bump: 0.02, roughMin: 0.42, roughMax: 0.78, tone: 0.4, bias: 1.8, key: 'env' }),
-    accent: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 0.9, 0.45), toneMapped: false }),
-    core: applySurface(new THREE.MeshPhysicalMaterial({ color: '#e2d9cc', roughness: 0.22, metalness: 0.9, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1.3 }),
+    accent: new THREE.MeshBasicMaterial({ color: new THREE.Color(0.75, 0.95, 1.7), toneMapped: false }),
+    core: applySurface(new THREE.MeshPhysicalMaterial({ color: '#d9dee8', roughness: 0.22, metalness: 0.9, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1.3 }),
       { scale: 1.6, bump: 0.008, roughMin: 0.2, roughMax: 0.38, tone: 0.15, bias: 2.0, key: 'shard' }),
-    glow: new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 1.25, 0.55), toneMapped: false }),
+    glow: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.45, 2.6), toneMapped: false }),
     // the complete core stays a clean, polished solid (160×120 segment sphere)
     solid: new THREE.MeshPhysicalMaterial({
-      color: '#d8cbb8', metalness: 0.55, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.04,
-      sheen: 0.4, sheenColor: new THREE.Color('#ffb070'), envMapIntensity: 1.25, transparent: true, opacity: 0,
+      color: '#cfd5e0', metalness: 0.55, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.04,
+      sheen: 0.4, sheenColor: new THREE.Color('#9fb4ff'), envMapIntensity: 1.25, transparent: true, opacity: 0,
     }),
-    seams: new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 1.2, 0.5), toneMapped: false, transparent: true, opacity: 0, depthWrite: false }),
+    seams: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.0, 1.35, 2.4), toneMapped: false, transparent: true, opacity: 0, depthWrite: false }),
   }), [])
   const solidRef = useRef(), seamRef = useRef()
 
@@ -396,7 +396,7 @@ export default function StoryWorld({ envCount }) {
     tx *= squeeze
     const portrait = aspect < 1
     if (portrait && c > 0.62) { ts *= 0.6; tz -= 2 }
-    mats.glow.color.setRGB(2.4, 1.25, 0.55).multiplyScalar(portrait ? 0.45 : 1)
+    mats.glow.color.setRGB(1.1, 1.45, 2.6).multiplyScalar(portrait ? 0.45 : 1)
 
     // exploration: the core is drawn toward the hovered / active skill cluster
     const w = smooth((c - 2.05) / 0.15) * (1 - smooth((c - 2.85) / 0.15))
@@ -472,8 +472,8 @@ export default function StoryWorld({ envCount }) {
     // --- selective illumination follows the core
     const L = rig.light
     L.ambient = 0.16; L.key = 0.5; L.keyPos.set(-6, 8, 6); L.rim = 0.8; L.rimPos.set(0, 3, -12)
-    L.keyColor.set('#e6ddd0'); L.rimColor.set('#ff9a52')
-    L.spot = 46 + intro * 20; L.spotColor.set('#ffb27a')
+    L.keyColor.set('#dde4f2'); L.rimColor.set('#7f9cff')
+    L.spot = 46 + intro * 20; L.spotColor.set('#cdd8ff')
     L.spotPos.set(g.x + 2.5, g.y + 5, g.z + 5)
     L.spotTarget.set(g.x, g.y, g.z)
     L.point = 5 + 3 * intro; L.pointPos.set(g.x + 0.6 * g.s, g.y + 0.8 * g.s, g.z + 0.4 + g.solid * 2.2 * g.s)

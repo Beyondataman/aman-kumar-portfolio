@@ -51,7 +51,7 @@ export default function Stage() {
       <CameraRig />
       <LightRig shadows={TIERS[baseTier].shadows} />
       <Environment resolution={64} frames={1}>
-        <Lightformer form="rect" intensity={2.2} color="#ffd2a8" position={[-4, 3, 4]} scale={[6, 2, 1]} />
+        <Lightformer form="rect" intensity={2.2} color="#e4ebff" position={[-4, 3, 4]} scale={[6, 2, 1]} />
         <Lightformer form="rect" intensity={1.2} color="#9fb4ff" position={[5, -1, 3]} scale={[4, 4, 1]} />
         <Lightformer form="ring" intensity={0.8} color="#ffffff" position={[0, 6, -6]} scale={3} />
       </Environment>
@@ -188,12 +188,12 @@ function LightRig({ shadows }) {
         angle={0.55}
         penumbra={1}
         decay={1.6}
-        color="#ffb27a"
+        color="#cdd8ff"
         castShadow={shadows}
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
       />
-      <pointLight ref={point} intensity={6} distance={7} decay={2} color="#ff8a3d" />
+      <pointLight ref={point} intensity={6} distance={7} decay={2} color="#6f8cff" />
     </>
   )
 }

@@ -57,6 +57,27 @@ add the file to `public/logos/` and set `logo: '/logos/nvidia.svg'` on the compa
 with sources listed in the file and on the *Dataset & Sources* view (which also offers a CSV download).
 All ratios, growth rates and CAGRs are computed in the browser from those raw values. Last reviewed: November 2026.
 
+## v2 motion system & templates
+
+Two animation libraries, each with one job:
+
+| Library | Used for | Where |
+|---|---|---|
+| **Anime.js v4** (`animejs`) | text splitting, staggers, SVG line drawing, count-ups, scroll-linked progress | `src/motion/anime.js` (hooks: `useSplitReveal`, `useReveal`, `useDraw`, `useCountUp`, `useScrub`) |
+| **Motion for React** (`motion`) | hover/press, magnetic buttons, mount/unmount presence | `src/motion/motion.jsx` (`MotionRoot`, `Lift`, `Magnetic`, `Presence`) |
+
+All motion turns off when the visitor's OS asks for reduced motion. Motion's engine is loaded on demand and only on pages wrapped in `<MotionRoot>`, so the story's first bundle stays the same size.
+
+Reusable templates live in `src/templates/` — preview them all at **`/templates`** (not linked from the site):
+
+- `PageHero`: kicker, split-text headline (`*word*` = italic serif accent, `|` = line break), lede and actions.
+- `CardGrid` + `Card`: staggered grid with hover lift.
+- `HScrollTrack`: horizontal shelf. It pins and scrolls sideways on desktop and becomes a swipe row on phones.
+- `CaseStudyLayout` + `CaseSection`, `Steps`, `Sources`: Problem → Approach → Evidence → Outcome with a sticky section rail. Project pages use it.
+- `charts.jsx`: `LineDraw`, `BarRace` and `StatBand`, small SVG charts that animate as they appear.
+
+Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), JetBrains Mono (labels). Palette tokens are at the top of `src/styles/base.css`.
+
 ## Architecture notes (performance spec)
 
 - **One persistent WebGL canvas** (`src/three/Stage.jsx`) for every route → exactly one GPU context; the story

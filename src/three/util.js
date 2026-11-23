@@ -52,15 +52,15 @@ export function makePlateTexture({ name, ticker, logo }, onUpdate) {
       const s = Math.min((W - 160) / img.width, (H - 170) / img.height)
       ctx.drawImage(img, (W - img.width * s) / 2, (H - 70 - img.height * s) / 2 + 10, img.width * s, img.height * s)
     } else {
-      ctx.fillStyle = '#f4f1ea'
+      ctx.fillStyle = '#eef1f6'
       let size = 170
-      ctx.font = `800 ${size}px Syne, "Arial Black", sans-serif`
-      while (ctx.measureText(name).width > W - 140 && size > 60) { size -= 8; ctx.font = `800 ${size}px Syne, "Arial Black", sans-serif` }
+      ctx.font = `800 ${size}px "Inter Tight", "Arial Black", sans-serif`
+      while (ctx.measureText(name).width > W - 140 && size > 60) { size -= 8; ctx.font = `800 ${size}px "Inter Tight", "Arial Black", sans-serif` }
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillText(name, W / 2, H / 2 - 30)
     }
     ctx.font = '600 44px "JetBrains Mono", monospace'
-    ctx.fillStyle = 'rgba(244,241,234,0.62)'
+    ctx.fillStyle = 'rgba(236,239,245,0.62)'
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'
     ctx.fillText(ticker, W / 2, H - 52)
     tex.needsUpdate = true

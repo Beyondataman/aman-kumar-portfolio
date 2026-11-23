@@ -26,7 +26,7 @@ export default function WorkspaceWorld() {
     const panel = new THREE.MeshStandardMaterial({ color: '#101115', roughness: 0.5, metalness: 0.6, envMapIntensity: 0.4 })
     const edge = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.16, 0.22, 0.42), toneMapped: false })
     const bar = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.35, 0.6, 1.4), transparent: true, opacity: 0.22, toneMapped: false, depthWrite: false })
-    const barCap = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.0, 0.5), toneMapped: false })
+    const barCap = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.3, 1.5, 2.2), toneMapped: false })
     const grid = new THREE.GridHelper(80, 80, '#2a2c33', '#15161a')
     grid.material.transparent = true
     grid.material.opacity = 0.55

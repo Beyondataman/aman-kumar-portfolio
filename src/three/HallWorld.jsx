@@ -30,10 +30,10 @@ export default function HallWorld() {
   const shared = useMemo(() => ({
     box: new THREE.BoxGeometry(1, 1, 1),
     plane: new THREE.PlaneGeometry(1, 1),
-    stone: applySurface(new THREE.MeshStandardMaterial({ color: '#2e2b29', roughness: 0.45, metalness: 0.25, envMapIntensity: 0.55 }),
+    stone: applySurface(new THREE.MeshStandardMaterial({ color: '#2a2c31', roughness: 0.45, metalness: 0.25, envMapIntensity: 0.55 }),
       { scale: 0.9, bump: 0.01, roughMin: 0.32, roughMax: 0.55, tone: 0.14, bias: 2.0, key: 'pillar' }),
     shadowTex: makeRadialTexture('rgba(0,0,0,0.9)', 'rgba(0,0,0,0)'),
-    poolTex: makeRadialTexture('rgba(255,190,140,0.55)', 'rgba(255,190,140,0)'),
+    poolTex: makeRadialTexture('rgba(170,190,255,0.5)', 'rgba(170,190,255,0)'),
   }), [])
   useEffect(() => () => {
     shared.box.dispose(); shared.plane.dispose(); shared.stone.dispose()
@@ -81,11 +81,11 @@ export default function HallWorld() {
 
     // selective light on the focused company
     const L = rig.light
-    L.keyColor.set('#d9d4cc'); L.rimColor.set('#9aa6c4')
+    L.keyColor.set('#d6dbe6'); L.rimColor.set('#9aa6c4')
     L.ambient = 0.55; L.key = 1.3; L.keyPos.set(O.x + camX - 10, 14, O.z + 10)
     L.rim = 1.4; L.rimPos.set(O.x + camX, 6, O.z - 20)
     L.spot = hovered || entering ? 140 : 95
-    L.spotColor.set(hovered || entering ? '#ffe2c8' : '#ffc89e')
+    L.spotColor.set(hovered || entering ? '#e6edff' : '#bccbff')
     L.spotPos.set(O.x + fc.slot[0] + 1.5, hOf(fc) + 7, O.z + fc.slot[1] + 4)
     L.spotTarget.set(O.x + fc.slot[0], hOf(fc) * 0.5, O.z + fc.slot[1])
     L.point = 0; L.pointPos.set(O.x, -50, O.z)
@@ -141,7 +141,7 @@ function Pillar({ c, index, shared, geo, visible, shadows }) {
   const plateTex = useMemo(() => makePlateTexture(c, () => kick(300)), [c])
   const mats = useMemo(() => ({
     plate: new THREE.MeshBasicMaterial({ map: plateTex, transparent: true, toneMapped: false, depthWrite: false, opacity: 0.8 }),
-    cap: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.8, 1.1, 0.6), toneMapped: false }),
+    cap: new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 1.2, 2.0), toneMapped: false }),
     shadow: new THREE.MeshBasicMaterial({ map: shared.shadowTex, transparent: true, depthWrite: false, opacity: 0.8 }),
     pool: new THREE.MeshBasicMaterial({ map: shared.poolTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }),
   }), [plateTex, shared])
@@ -175,7 +175,7 @@ function Pillar({ c, index, shared, geo, visible, shadows }) {
     a.op += (opT - a.op) * f
 
     group.current.position.set(x, -a.sink, z + a.fwd)
-    cap.current.material.color.setRGB(1.8 * a.glow, 1.1 * a.glow, 0.6 * a.glow)
+    cap.current.material.color.setRGB(0.9 * a.glow, 1.2 * a.glow, 2.0 * a.glow)
     plate.current.material.opacity = a.op
     pool.current.material.opacity = clamp((a.glow - 0.3) * 0.5, 0, 0.5)
     // the name plate turns gently toward the viewer

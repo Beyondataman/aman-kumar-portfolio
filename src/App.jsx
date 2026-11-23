@@ -10,6 +10,7 @@ const Stage = lazy(() => import('./three/Stage'))
 const Hall = lazy(() => import('./pages/Hall'))
 const Workspace = lazy(() => import('./pages/Workspace'))
 const Project = lazy(() => import('./pages/Project'))
+const Templates = lazy(() => import('./pages/Templates'))
 
 const Router = import.meta.env.MODE === 'hash' ? HashRouter : BrowserRouter
 
@@ -21,13 +22,14 @@ export default function App() {
   )
 }
 
-const IDLE_FPS = { story: 30, hall: 30, workspace: 0, project: 0, other: 0 }
+const IDLE_FPS = { story: 30, hall: 30, workspace: 0, project: 0, templates: 0, other: 0 }
 
 function routeOf(path) {
   if (path === '/' || path === '') return 'story'
   if (path.startsWith('/hall')) return 'hall'
   if (path.startsWith('/workspace')) return 'workspace'
   if (path.startsWith('/projects')) return 'project'
+  if (path.startsWith('/templates')) return 'templates'
   return 'other'
 }
 
@@ -89,6 +91,7 @@ function Shell() {
           <Route path="/hall" element={<Hall />} />
           <Route path="/workspace/:companyId" element={<Workspace />} />
           <Route path="/projects/:projectId" element={<Project />} />
+          <Route path="/templates" element={<Templates />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
