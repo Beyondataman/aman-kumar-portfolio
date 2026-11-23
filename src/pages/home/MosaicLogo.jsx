@@ -3,8 +3,9 @@ import { useEffect, useRef } from 'react'
 /**
  * A logo drawn as a pixel mosaic in the same palette as the hero portrait.
  * `src`: an image with a transparent background (PNG/SVG/WebP). Without one,
- * a generic pictogram (`icon`) is used. The squares assemble the first time
- * the tile scrolls into view.
+ * a generic pictogram (`icon`) is used. Whenever src/icon change, the old
+ * squares leave and the new ones assemble with a randomly chosen transition
+ * (scatter · rise · wipe · pop).
  */
 const CELLS = 16
 
@@ -105,54 +106,94 @@ function colour(b, r) {
   return `rgb(${[0, 1, 2].map((k) => Math.min(255, Math.round((lo[k] + (hi[k] - lo[k]) * b) * v * tint[k] * 255))).join(',')})`
 }
 
-export default function MosaicLogo({ src, icon, size = 64 }) {
+// sampled + coloured squares, cached per logo
+const cache = new Map()
+function loadCells(src, icon) {
+  const key = src || `icon:${icon}`
+  if (!cache.has(key)) {
+    cache.set(key, new Promise((resolve) => {
+      const done = (source, isIcon) => resolve(sample(source, isIcon).map((c) => ({ ...c, fill: colour(c.b, c.r) })))
+      if (!src) return done(icon, true)
+      const img = new Image()
+      img.onload = () => done(img, false)
+      img.onerror = () => done(icon, true)
+      img.src = src
+    }))
+  }
+  return cache.get(key)
+}
+
+const STYLES = ['scatter', 'rise', 'wipe', 'pop']
+const OUT_MS = 380
+const IN_MS = 760
+
+/** progress of one square: delay window `d` (0..1 of the phase) then a 0.45 ramp */
+const local = (t, d) => Math.min(1, Math.max(0, (t - d * 0.55) / 0.45))
+
+export default function MosaicLogo({ src, icon, size = 64, delay = 0 }) {
   const ref = useRef(null)
+  const shown = useRef(null) // cells currently on screen
+  const raf = useRef(0)
+  const firstDelay = useRef(delay) // only the first appearance is delayed (staggered reveal)
+
   useEffect(() => {
     const cv = ref.current
     if (!cv) return
     const dpr = Math.min(2, window.devicePixelRatio || 1)
-    cv.width = cv.height = Math.round(size * dpr)
+    const px = Math.round(size * dpr)
+    if (cv.width !== px) { cv.width = cv.height = px }
     const g = cv.getContext('2d')
     const cell = cv.width / CELLS
-    let cells = null, raf = 0, io, alive = true
+    const sq = cell * 0.84
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    let alive = true, timer = 0
 
-    const draw = (t) => {
-      g.clearRect(0, 0, cv.width, cv.height)
+    const paint = (cells, t, phase, style) => {
       for (const c of cells) {
-        const p = Math.min(1, Math.max(0, (t - c.d * 0.6) / 0.4)) // per-square arrival
-        if (p <= 0) continue
-        const e = 1 - Math.pow(1 - p, 3)
-        const off = (1 - e) * cell * 3 * (c.r - 0.5)
+        let d = c.d
+        if (style === 'rise') d = 1 - c.y / CELLS
+        else if (style === 'wipe') d = c.x / CELLS
+        const p = local(t, d)
+        const e = phase === 'in' ? 1 - Math.pow(1 - p, 3) : 1 - p * p
+        if (e <= 0.01) continue
+        let dx = 0, dy = 0, sc = 1
+        const k = 1 - e
+        if (style === 'scatter') { dx = (c.r - 0.5) * cell * 6 * k; dy = (c.d - 0.5) * cell * 6 * k }
+        else if (style === 'rise') dy = cell * 4 * k * (phase === 'in' ? 1 : -1)
+        else if (style === 'wipe') dx = cell * 2 * k * (phase === 'in' ? -1 : 1)
+        else sc = e
         g.globalAlpha = e
-        g.fillStyle = colour(c.b, c.r)
-        g.fillRect(c.x * cell + off, c.y * cell - (1 - e) * cell * 2, cell * 0.84, cell * 0.84)
+        g.fillStyle = c.fill
+        const w = sq * sc
+        g.fillRect(c.x * cell + (sq - w) / 2 + dx, c.y * cell + (sq - w) / 2 + dy, w, w)
       }
       g.globalAlpha = 1
     }
-    const play = () => {
-      if (reduced) { draw(1); return }
-      const t0 = performance.now()
-      const step = (now) => {
-        const t = Math.min(1, (now - t0) / 1100)
-        draw(t)
-        if (t < 1 && alive) raf = requestAnimationFrame(step)
-      }
-      raf = requestAnimationFrame(step)
-    }
-    const ready = (source, isIcon) => {
+
+    loadCells(src, icon).then((next) => {
       if (!alive) return
-      cells = sample(source, isIcon)
-      io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { io.disconnect(); play() } })
-      io.observe(cv)
-    }
-    if (src) {
-      const img = new Image()
-      img.onload = () => ready(img, false)
-      img.onerror = () => ready(icon, true)
-      img.src = src
-    } else ready(icon, true)
-    return () => { alive = false; cancelAnimationFrame(raf); io?.disconnect() }
+      const prev = shown.current
+      shown.current = next
+      if (reduced) { g.clearRect(0, 0, cv.width, cv.height); paint(next, 1, 'in', 'pop'); return }
+      const style = STYLES[Math.floor(Math.random() * STYLES.length)]
+      const start = () => {
+        const t0 = performance.now()
+        const outMs = prev ? OUT_MS : 0
+        const step = (now) => {
+          const el = now - t0
+          g.clearRect(0, 0, cv.width, cv.height)
+          if (el < outMs) paint(prev, el / outMs, 'out', style)
+          else paint(next, Math.min(1, (el - outMs) / IN_MS), 'in', style)
+          if (el < outMs + IN_MS && alive) raf.current = requestAnimationFrame(step)
+        }
+        cancelAnimationFrame(raf.current)
+        raf.current = requestAnimationFrame(step)
+      }
+      const wait = prev ? 0 : firstDelay.current
+      if (wait) timer = setTimeout(start, wait)
+      else start()
+    })
+    return () => { alive = false; clearTimeout(timer); cancelAnimationFrame(raf.current) }
   }, [src, icon, size])
 
   return <canvas ref={ref} className="mlogo" style={{ width: size, height: size }} aria-hidden="true" />
