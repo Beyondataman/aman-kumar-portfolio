@@ -10,7 +10,7 @@ import { MotionRoot } from '../motion/motion'
 /**
  * PROJECT DETAIL DESTINATION (route "/projects/:projectId").
  * Built on the CaseStudyLayout template: Problem → Approach → Evidence → Outcome.
- * "Return to Story" restores the exact story position the visitor left from.
+ * "Back to Home" restores the exact story position the visitor left from.
  */
 export default function Project() {
   const { projectId } = useParams()
@@ -25,7 +25,7 @@ export default function Project() {
   }, [projectId])
 
   const toStory = () => {
-    if (location.state?.from === 'story' && window.history.state?.idx > 0) back()
+    if (['home', 'story'].includes(location.state?.from) && window.history.state?.idx > 0) back()
     else go('/', { state: { resume: true } })
   }
 
@@ -33,7 +33,7 @@ export default function Project() {
     return (
       <main className="page page--center">
         <h1 className="display-m">Project not found</h1>
-        <button className="btn" onClick={toStory}>Return to Story</button>
+        <button className="btn" onClick={toStory}>Back to Home</button>
       </main>
     )
   }
@@ -47,7 +47,7 @@ export default function Project() {
         key={projectId}
         className="project"
         top={<>
-          <button className="btn btn--ghost btn--sm" onClick={toStory}>← Return to Story</button>
+          <button className="btn btn--ghost btn--sm" onClick={toStory}>← Back to Home</button>
           <span className="mono muted">Project {pad2(i + 1)} / {pad2(projectOrder.length)}</span>
         </>}
         hero={{ kicker: p.kicker, title: p.title, lede: p.overview }}
@@ -56,7 +56,7 @@ export default function Project() {
           { label: 'My role', value: <Todo value={p.role} /> },
         ]}
         footer={<>
-          <button className="btn" onClick={toStory}>← Return to Story</button>
+          <button className="btn" onClick={toStory}>← Back to Home</button>
           <button className="btn btn--ghost" onClick={() => go(`/projects/${next.id}`, { state: location.state, replace: true })}>Next: {next.short} →</button>
         </>}
       >

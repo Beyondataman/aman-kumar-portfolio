@@ -27,6 +27,14 @@ export const live = {
     card: null, // screen anchor of the hovered pillar
   },
   workspace: { enterStart: 0 },
+  hero: {
+    ready: false, // mosaic built
+    requested: false, // the page asked for the assembly to start
+    start: 0, // performance.now() when assembly began (0 = not yet)
+    duration: 2600,
+    t: 0, // 0..1 assembly progress
+    scatter: 0, // 0..1 as the hero scrolls away
+  },
 }
 
 export function kick(ms = 1200) {

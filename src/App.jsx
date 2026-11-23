@@ -3,9 +3,9 @@ import { BrowserRouter, HashRouter, Route, Routes, useLocation, Link } from 'rea
 import { useStore } from './lib/store'
 import { live, kick } from './lib/live'
 import { webglAvailable } from './lib/quality'
-import Story from './pages/Story'
+import Home from './pages/Home'
 
-// Route-level code splitting: only the story ships in the first bundle.
+// Route-level code splitting: only the home page ships in the first bundle.
 const Stage = lazy(() => import('./three/Stage'))
 const Hall = lazy(() => import('./pages/Hall'))
 const Workspace = lazy(() => import('./pages/Workspace'))
@@ -87,7 +87,7 @@ function Shell() {
       <div className="atmos" aria-hidden="true" />
       <Suspense fallback={<RouteLoading />}>
         <Routes>
-          <Route path="/" element={<Story />} />
+          <Route path="/" element={<Home />} />
           <Route path="/hall" element={<Hall />} />
           <Route path="/workspace/:companyId" element={<Workspace />} />
           <Route path="/projects/:projectId" element={<Project />} />
@@ -119,7 +119,7 @@ function NotFound() {
     <main className="page page--center">
       <p className="mono muted">404 — path not found</p>
       <h1 className="display-m">This room doesn’t exist.</h1>
-      <Link className="btn" to="/" state={{ resume: true }}>Return to Story</Link>
+      <Link className="btn" to="/" state={{ resume: true }}>Back to Home</Link>
     </main>
   )
 }

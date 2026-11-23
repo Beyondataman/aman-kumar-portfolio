@@ -190,19 +190,20 @@ export const projects = {
   },
   portfolio: {
     id: 'portfolio',
-    title: 'This Site — Story + Analytics Hall',
+    title: 'This Site — Portfolio + Analytics Hall',
     short: 'This Site',
     cta: 'Explore This Build',
     kicker: 'Web · 3D · Analytics',
     overview:
-      'A scroll-driven personal story and a separate spatial Analytics Hall of company case studies, built as one connected web experience.',
+      'A single-page portfolio opened by a particle-mosaic portrait, and a separate Analytics Hall of company case studies, built as one connected web experience.',
     problem:
-      'A conventional résumé shows a list. This site is meant to show how I think (the Analytics Hall) and how I build (the Developer Engine) as well as who I am.',
+      'A conventional résumé shows a list. This site is meant to show how I think (the Analytics Hall and its case studies) and how I build, as well as who I am.',
     role: 'Content, analysis and build.',
-    technologies: 'React, React Router, Three.js via React Three Fiber, Drei, Postprocessing, Recharts, Zustand, Vite.',
+    technologies: 'React, React Router, Three.js via React Three Fiber, Drei, Postprocessing, Anime.js, Motion, Recharts, Zustand, Vite.',
     implementation: [
-      { title: 'One persistent 3D stage', text: 'A single WebGL canvas is shared by every route, so the story object and environments are never recreated and only one GPU context exists.' },
-      { title: 'Resumable navigation', text: 'The story position, chapter and object state are saved when you leave and restored when you return from the Hall or a project.' },
+      { title: 'Portrait mosaic', text: 'The hero portrait is thousands of GPU-drawn squares that fly in and settle on a grid sampled from a photo, with the studio background keyed out.' },
+      { title: 'One persistent 3D stage', text: 'A single WebGL canvas is shared by every route, so worlds are never recreated and only one GPU context exists.' },
+      { title: 'Resumable navigation', text: 'Your place on the home page is saved when you open the Hall or a project and restored when you come back.' },
       { title: 'Lazy analytics', text: 'The Hall, the dashboards and the charting library load only when a visitor goes there.' },
       { title: 'Adaptive quality', text: 'Resolution and post-processing scale with measured frame rate; rendering pauses when nothing moves.' },
     ],
@@ -214,14 +215,85 @@ export const projects = {
 
 export const projectOrder = ['tedxisme', 'linux-lab', 'portfolio']
 
-/* ---------------- Story chapters (indicator + resume) ---------------- */
-export const chapters = [
-  { id: 'origin', n: '01', title: 'Origin' },
-  { id: 'foundation', n: '02', title: 'Foundation' },
-  { id: 'exploration', n: '03', title: 'Exploration' },
-  { id: 'building', n: '04', title: 'Building & Experience' },
-  { id: 'portal', n: '05', title: 'Analytics Hall' },
-  { id: 'continuation', n: '06', title: 'The Story Continues' },
-  { id: 'engine', n: '07', title: 'The Developer Engine' },
-  { id: 'ending', n: '08', title: 'sudo make me employable' },
-]
+/* ---------------- Home page (v2) ----------------
+ * Text for the single-page home. **double asterisks** = bold in the bio,
+ * *single* = italic accent in titles. Work titles keep their case as written. Keep everything factual — anything
+ * not yet confirmed belongs in a TODO above, not here.
+ */
+export const home = {
+  heroWord: 'PORTFOLIO', // the giant word across the hero
+  role: { strong: 'Business Analytics', em: 'Student' },
+  nav: [
+    { id: 'home', label: 'Home' },
+    { id: 'about', label: 'About' },
+    { id: 'skills', label: 'Skills' },
+    { id: 'work', label: 'Work' },
+    { id: 'contact', label: 'Contact' },
+  ],
+  bio:
+    "Hey, I'm **Aman**. I'm doing a **PGDM in Business Analytics** at **ISME, Bengaluru** (2026–2028), on top of a **BSc in Mathematics** from Meerut College. " +
+    'I like starting from the decision someone has to make and working back to the data — my first full case study rebuilds **NVIDIA\'s FY22–FY26** story straight from its filings. ' +
+    'Away from spreadsheets I worked on the technology behind **TEDxISME** — the website, backend and ticketing — and I keep a running **Linux** lab for systems experiments.',
+  // rows of the skill marquee (alternate directions)
+  stack: [
+    ['Python', 'SQL', 'Advanced Excel', 'Power BI', 'DAX', 'Tableau', 'Pivot tables', 'Data cleaning'],
+    ['Statistical Analysis', 'Financial Analysis', 'Market Research', 'Business Analytics', 'Reading filings', 'Ratios & margins', 'Growth analysis'],
+    ['Linux', 'Command line', 'React', 'Three.js', 'Vite', 'Recharts', 'Git', 'GitHub'],
+  ],
+  servicesTitle: 'What I|*can do*',
+  // numbered accordion; bullets come from skills where possible
+  services: [
+    {
+      id: 'data', title: 'Data & Code',
+      bullets: ['Python for cleaning, analysis & automation', 'SQL — joins, aggregations, querying', 'Repeatable scripts instead of manual steps'],
+      text: 'Getting, shaping and querying data so the analysis starts from something trustworthy.',
+    },
+    {
+      id: 'bi', title: 'BI & Visualisation',
+      bullets: ['Advanced Excel — lookups, pivots, models', 'Power BI — data models & DAX measures', 'Tableau — visual analytics (learning)', 'Interactive reports & dashboards'],
+      text: 'Turning tables into decisions: reports and dashboards someone can actually use.',
+    },
+    {
+      id: 'analysis', title: 'Business & Financial Analysis',
+      bullets: ['Statistical analysis from a maths base', 'Reading filings, ratios, margins & growth', 'Market research and sizing', 'Question → data → insight → decision'],
+      text: 'Asking the right question first, then testing what the numbers really say.',
+      cta: { label: 'Open the Analytics Hall', to: '/hall' },
+    },
+    {
+      id: 'cases', title: 'Company Case Studies',
+      bullets: ['Figures sourced from 10-Ks & results releases', 'Interactive dashboards per company', 'Methodology and sources shown with every view'],
+      text: 'The Analytics Hall: one company at a time, built from primary sources. NVIDIA is live; more are in progress.',
+      cta: { label: 'Open the NVIDIA case', to: '/workspace/nvidia' },
+    },
+    {
+      id: 'web', title: 'Web & Event Technology',
+      bullets: ['Event website & backend (TEDxISME)', 'Registration & ticketing workflows', 'This site — React, Three.js, Vite'],
+      text: 'Building the tools around the analysis, from an event platform to this portfolio.',
+      cta: { label: 'View the TEDxISME project', to: '/projects/tedxisme' },
+    },
+    {
+      id: 'systems', title: 'Linux & Systems',
+      bullets: ['Command line & system setup', 'Self-hosted experiments', 'Hands-on experiments with tools & distributions'],
+      text: 'An ongoing lab for hands-on experimentation with Linux and technology.',
+      cta: { label: 'View the Linux lab', to: '/projects/linux-lab' },
+    },
+  ],
+  workIntro: 'Analysis built from primary sources, and the technology projects around it.',
+  // "BOLD *italic*" title + second line, per work row
+  work: [
+    { id: 'nvidia', to: '/workspace/nvidia', title: 'NVIDIA *case*', sub: 'From graphics to AI', media: 'chart',
+      text: "An interactive case study of NVIDIA's FY22–FY26 growth — revenue mix, margins, geography and customer concentration — with every figure sourced from the company's filings.",
+      links: [{ label: 'Open dashboard', to: '/workspace/nvidia' }, { label: 'Analytics Hall', to: '/hall' }] },
+    { id: 'tedxisme', to: '/projects/tedxisme', title: 'TEDxISME', sub: 'Event platform', media: 'ticket',
+      text: 'The technology behind TEDxISME: the event website, its backend, and the registration and ticketing workflows attendees use to sign up.',
+      links: [{ label: 'Project details', to: '/projects/tedxisme' }] },
+    { id: 'linux-lab', to: '/projects/linux-lab', title: 'LINUX *lab*', sub: 'Systems experiments', media: 'terminal',
+      text: 'An ongoing space for hands-on experimentation with Linux and technology.',
+      links: [{ label: 'Project details', to: '/projects/linux-lab' }] },
+    { id: 'portfolio', to: '/projects/portfolio', title: 'THIS *site*', sub: 'Web · 3D · Analytics', media: 'mosaic',
+      text: 'A single-page portfolio with a particle-mosaic portrait, plus a separate Analytics Hall of company case studies — React, Three.js and Vite.',
+      links: [{ label: 'How it is built', to: '/projects/portfolio' }] },
+  ],
+  contactTitle: 'Get in *touch*',
+  contactText: 'For case studies, projects or opportunities — email is the fastest way to reach me.',
+}

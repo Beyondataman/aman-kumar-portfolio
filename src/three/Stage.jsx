@@ -8,7 +8,7 @@ import { live } from '../lib/live'
 import { TIERS } from '../lib/quality'
 import { rig } from './rig'
 import { k } from './util'
-import StoryWorld from './StoryWorld'
+import HeroWorld from './HeroWorld'
 
 // Worlds other than the story are code-split and mounted on first visit only.
 const HallWorld = lazy(() => import('./HallWorld'))
@@ -56,7 +56,7 @@ export default function Stage() {
         <Lightformer form="ring" intensity={0.8} color="#ffffff" position={[0, 6, -6]} scale={3} />
       </Environment>
 
-      <StoryWorld envCount={TIERS[baseTier].envCount} />
+      <HeroWorld />
       {worlds.hall && (
         <Suspense fallback={null}>
           <HallWorld />

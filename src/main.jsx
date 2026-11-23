@@ -9,10 +9,12 @@ import '@fontsource/instrument-serif/latin-400-italic.css'
 import '@fontsource/inter/latin-400.css'
 import '@fontsource/inter/latin-500.css'
 import '@fontsource/inter/latin-600.css'
+import '@fontsource/inter/latin-300-italic.css'
 import '@fontsource/jetbrains-mono/latin-400.css'
 import '@fontsource/jetbrains-mono/latin-600.css'
 import './styles/base.css'
 import './styles/templates.css'
+import './styles/home.css'
 
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 

@@ -33,7 +33,7 @@ export default function Templates() {
     <MotionRoot>
       <main className="page tpl">
         <header className="tpl-top">
-          <button className="btn btn--ghost btn--sm" onClick={() => go('/', { state: { resume: true } })}>← Story</button>
+          <button className="btn btn--ghost btn--sm" onClick={() => go('/', { state: { resume: true } })}>← Home</button>
           <span className="mono muted">v2 · template kit</span>
         </header>
 

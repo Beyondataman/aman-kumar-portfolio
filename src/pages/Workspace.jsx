@@ -105,7 +105,7 @@ export default function Workspace() {
         <p className="muted">{company ? 'This company is in the Hall, but its analysis is not published yet.' : 'There is no workspace at this address.'}</p>
         <div className="row">
           <button className="btn" onClick={() => go('/hall', { state: { from: 'workspace' } })}>← Return to Analytics Hall</button>
-          <button className="btn btn--ghost" onClick={toStory}>Return to Personal Story</button>
+          <button className="btn btn--ghost" onClick={toStory}>Back to Home</button>
         </div>
       </main>
     )
@@ -128,7 +128,7 @@ export default function Workspace() {
         </div>
         <div className="ws-actions">
           <button className="btn btn--ghost btn--sm" onClick={toHall}>← Return to Analytics Hall</button>
-          <button className="btn btn--ghost btn--sm" onClick={toStory}>Return to Personal Story</button>
+          <button className="btn btn--ghost btn--sm" onClick={toStory}>Back to Home</button>
         </div>
       </header>
 

@@ -107,7 +107,7 @@ export default function Hall() {
   }, [notice])
 
   const returnToStory = () => {
-    if (location.state?.from === 'story' && window.history.state?.idx > 0) back()
+    if (['home', 'story'].includes(location.state?.from) && window.history.state?.idx > 0) back()
     else go('/', { state: { resume: true } })
   }
 
@@ -122,7 +122,7 @@ export default function Hall() {
           <p className="muted hall-sub">Explore companies, investigate business performance, and discover the stories hidden inside data.</p>
         </div>
         <nav className="hall-nav">
-          <button className="btn btn--ghost btn--sm" onClick={returnToStory}>← Return to Story</button>
+          <button className="btn btn--ghost btn--sm" onClick={returnToStory}>← Back to Home</button>
         </nav>
       </header>
 

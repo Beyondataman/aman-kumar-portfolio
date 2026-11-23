@@ -1,10 +1,10 @@
-# Aman Kumar — Personal Story + Analytics Hall
+# Aman Kumar — Portfolio + Analytics Hall
 
 One connected site with two distinct experiences:
 
 | Route | Experience |
 |---|---|
-| `/` | **Experience A — Personal Story.** Scroll-driven, 8 chapters: Origin → Foundation → Exploration → Building & Experience → Analytics Hall portal → The Story Continues → The Developer Engine → `sudo make me employable` |
+| `/` | **Home.** Single page: particle-mosaic portrait hero → About (Intro + skill marquee) → Skills (numbered accordion) → Selected work → Contact. Text lives in `home` in `src/data/profile.js` |
 | `/hall` | **Experience B — The Analytics Hall.** Spatial gallery of company monoliths |
 | `/workspace/:companyId` | **Company analytical workspace** (3D instrument sidebar + interactive dashboard). Live: `nvidia` |
 | `/projects/:projectId` | Project detail destinations: `tedxisme`, `linux-lab`, `portfolio` |
@@ -66,7 +66,7 @@ Two animation libraries, each with one job:
 | **Anime.js v4** (`animejs`) | text splitting, staggers, SVG line drawing, count-ups, scroll-linked progress | `src/motion/anime.js` (hooks: `useSplitReveal`, `useReveal`, `useDraw`, `useCountUp`, `useScrub`) |
 | **Motion for React** (`motion`) | hover/press, magnetic buttons, mount/unmount presence | `src/motion/motion.jsx` (`MotionRoot`, `Lift`, `Magnetic`, `Presence`) |
 
-All motion turns off when the visitor's OS asks for reduced motion. Motion's engine is loaded on demand and only on pages wrapped in `<MotionRoot>`, so the story's first bundle stays the same size.
+All motion turns off when the visitor's OS asks for reduced motion. Motion's engine is loaded on demand and only on pages wrapped in `<MotionRoot>`, so the home page's first bundle stays small.
 
 Reusable templates live in `src/templates/` — preview them all at **`/templates`** (not linked from the site):
 
@@ -80,25 +80,27 @@ Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), Je
 
 ## Architecture notes (performance spec)
 
-- **One persistent WebGL canvas** (`src/three/Stage.jsx`) for every route → exactly one GPU context; the story
-  object and environments are never re-created. Story, Hall and Workspace are separate "worlds" in the same scene;
+- **One persistent WebGL canvas** (`src/three/Stage.jsx`) for every route → exactly one GPU context; worlds are never
+  re-created. Home (the portrait mosaic, `HeroWorld.jsx` + `mosaic.js`), Hall and Workspace are separate "worlds" in the same scene;
   inactive worlds are hidden, and the Hall/Workspace worlds are lazy-mounted on first visit then kept.
 - **Shared light rig**: lights are never added/removed on route change (avoids shader recompiles); worlds only retarget them.
-- **Instancing**: environment slabs, the 144-shard core, the instrument arc — all `InstancedMesh`.
+- **Portrait mosaic**: one `THREE.Points` draw call (one square per grid cell, sampled from `src/assets/aman-portrait.webp`; the white backdrop is flood-filled out). Fewer, larger squares on phones; the canvas stops rendering once the hero is scrolled away.
+- **Instancing**: Hall pillars and the instrument arc use `InstancedMesh`.
 - **Demand-based rendering**: `frameloop="demand"`; full rate only while scrolling / pointer moves / transitions,
-  a 30 fps ambient rate in Story and Hall, and **zero** frames while reading a dashboard. Paused in hidden tabs.
+  a 30 fps ambient rate on the home hero and in the Hall, and **zero** frames while reading a dashboard. Paused in hidden tabs.
 - **Adaptive quality**: device-based starting tier + `PerformanceMonitor` → DPR, bloom, depth-of-field (Hall only), reflective floor.
-- **Code splitting**: three.js, the Hall, the Workspace, Recharts and the NVIDIA dataset are separate chunks; the Hall chunk is
-  prefetched while the visitor reads chapter 4; the dashboard chunk is prefetched during the camera flight into a pillar.
+- **Code splitting**: three.js, the home sections below the hero, the Hall, the Workspace, Recharts and the NVIDIA dataset are
+  separate chunks; the Hall chunk is prefetched a few seconds after the home page loads; the dashboard chunk is prefetched during
+  the camera flight into a pillar.
 - **GPU disposal**: geometries, materials and canvas textures are disposed on unmount.
 - **State restoration**:
-  - Story saves `{chapter, fraction}` continuously; returning from the Hall, a workspace or a project restores the exact
-    position. Because the 3D object is a pure function of scroll position, its animation state is restored too.
+  - Home saves its scroll position; returning from the Hall, a workspace or a project restores it and skips the intro
+    (the intro plays once per browser session).
   - Hall saves its scroll track position and selected company.
   - Workspace keeps view + filters in the URL (`?view=&from=&to=&unit=&hide=`) and session storage; view changes use
     `replace`, so browser **Back** goes to the Hall, not through every tab.
   - "Return" buttons use `history.back()` when the destination is the previous entry, otherwise a fresh navigation that still restores.
-- Tested: forward/back navigation, repeated Hall ↔ Workspace ↔ Story loops (canvas count stays 1), mobile layouts, reduced-motion.
+- Tested: forward/back navigation, repeated Hall ↔ Workspace ↔ Home loops (canvas count stays 1), mobile layouts, reduced-motion.
 
 ## 3D assets (made in Blender)
 
@@ -107,11 +109,11 @@ Type: Inter Tight (display), Instrument Serif italic (accents), Inter (body), Je
 | File | What it is |
 |---|---|
 | `env-pieces.glb` | 4 bevelled architectural pieces (clean, chipped, stepped, split) — boolean cuts, 4-segment bevels, weighted normals |
-| `core-shard.glb` | crystalline shard used for the story core's fragments |
+| `core-shard.glb` | crystalline shard (used by the v1 story; kept for reuse) |
 | `surface.jpg` | 2048² **seamless** surface map baked in Cycles (R height · G roughness · B tone): layered 4D noise + Voronoi fracture seams |
 
 The surface is applied with **triplanar mapping** (`src/three/assets.js → applySurface`) using each piece's real scaled size,
-so detail never stretches on scaled pieces. It drives bump, roughness and tone on the story environment, the core's shards and the Hall pillars.
+so detail never stretches on scaled pieces. It drives bump, roughness and tone on the Hall pillars.
 
 Regenerate (Blender 4.2+ or `pip install bpy`):
 
@@ -122,5 +124,4 @@ python3 blender/make_assets.py src/assets               # with the bpy module
 
 ## Accessibility
 
-Real DOM text for every chapter (the canvas is decorative, `aria-hidden`), keyboard-reachable skill nodes and company index,
-skill levels encoded by shape + label (not colour alone), every chart has a *Table view*, and `prefers-reduced-motion` is respected.
+Real DOM text for every section (the canvas is decorative, `aria-hidden`), a keyboard-reachable accordion, nav and company index, every chart has a *Table view*, and `prefers-reduced-motion` is respected.
