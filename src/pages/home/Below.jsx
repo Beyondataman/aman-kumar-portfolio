@@ -47,7 +47,8 @@ function About({ ref }) {
           <h2 id="about-title" ref={big} className="h-giant">Intro</h2>
         </div>
         <div ref={card} className="h-bio">
-          <p><Bold text={home.bio} /></p>
+          {home.bio.split('\n\n').map((para, i) => <p key={i}><Bold text={para} /></p>)}
+          {home.bioNote && <p className="h-bio-note">{home.bioNote}</p>}
         </div>
       </div>
       <p className="h-kicker h-stack-label">The stack</p>

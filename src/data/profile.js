@@ -241,10 +241,14 @@ export const home = {
     { id: 'work', label: 'Work' },
     { id: 'contact', label: 'Contact' },
   ],
+  // About card: paragraphs separated by a blank line ("\n\n"); **bold** = highlighted words
   bio:
-    "Hey, I'm **Aman**. I'm doing a **PGDM in Business Analytics** at **ISME, Bengaluru** (2026–2028), on top of a **BSc in Mathematics** from Meerut College. " +
-    'I like starting from the decision someone has to make and working back to the data — my first full case study rebuilds **NVIDIA\'s FY22–FY26** story straight from its filings. ' +
-    'Away from spreadsheets I worked on the technology behind **TEDxISME** — the website, backend and ticketing — and I keep a running **Linux** lab for systems experiments.',
+    "Hey, I'm **Aman**. I'm happiest when I'm figuring out how something works and then building my own version of it, " +
+    "whether that's a **dashboard**, a **website** or a **Linux** setup I've broken and fixed three times.\n\n" +
+    'I like starting from the decision someone actually has to make and working back to the numbers. When I\'m not doing that, ' +
+    "I'm usually behind a **camera**, cutting video in **DaVinci Resolve**, or working on the **frontend** or **backend** of my next build.",
+  // the small line under the bio
+  bioNote: 'PGDM Business Analytics · ISME Bengaluru · 2026–28',
   // rows of the skill marquee (alternate directions)
   stack: [
     ['Python', 'SQL', 'Advanced Excel', 'Power BI', 'DAX', 'Tableau', 'Pivot tables', 'Data cleaning'],
