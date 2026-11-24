@@ -66,13 +66,13 @@ export function useSplitReveal(ref, { split = 'words', on = 'mount', delay = 0, 
       const w = p.parentElement
       if (!w) return
       w.style.display = 'inline-block'
-      w.style.clipPath = 'inset(-0.05em -0.35em -0.12em -0.35em)'
+      w.style.clipPath = 'inset(-0.6em -0.4em -0.32em -0.4em)' // open above/beside, just enough below for descenders
     })
-    utils.set(parts, { y: '110%' })
+    utils.set(parts, { y: '150%' }) // far enough below that the extended bottom edge still hides it
     // once settled, undo the split: the clip masks would otherwise crop italic
     // overhangs and tight letter-spacing at the edges of each word
     const play = () =>
-      animate(parts, { y: ['110%', '0%'], duration, ease: EASE_OUT, delay: stagger(step, { start: delay }), onComplete: () => splitter.revert() })
+      animate(parts, { y: ['150%', '0%'], duration, ease: EASE_OUT, delay: stagger(step, { start: delay }), onComplete: () => splitter.revert() })
     const stop = on === 'view' ? whenVisible(el, play) : (play(), () => {})
     return () => { stop(); splitter.revert() }
   }, deps)

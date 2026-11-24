@@ -86,7 +86,7 @@
   background: radial-gradient(60% 55% at 50% 50%, #17181d 0%, #08080a 70%, #050506 100%);
 }
 .pl-name { display: flex; overflow: visible; font: 900 clamp(2.8rem, 9vw, 8.5rem)/0.9 var(--f-display); letter-spacing: -0.04em; }
-.pl-l { display: inline-block; will-change: transform; }
+.pl-l { display: inline-block; will-change: transform; padding: 0.1em 0.12em; margin: -0.1em -0.12em; } /* room for overhangs: each letter paints its own gradient */
 .pl-sp { width: 0.28em; }
 .pl-line { width: min(60vw, 640px); height: 1px; background: rgba(255, 255, 255, 0.08); position: relative; overflow: hidden; }
 .pl-line i { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--accent), transparent); transform-origin: left; transform: scaleX(0); }
@@ -265,3 +265,4 @@
   .h-mq-track[aria-hidden='true'] { display: none; }
 }
 @media (max-width: 900px) and (max-height: 700px) { .h-row { position: relative; top: auto; min-height: 0; } }
+@media (max-width: 560px) { .h-giant--work { font-size: clamp(2.6rem, 14vw, 3.8rem); } }
