@@ -56,9 +56,18 @@ export function useAnime(ref, setup, deps = []) {
 export function useSplitReveal(ref, { split = 'words', on = 'mount', delay = 0, step = 55, duration = 1200 } = {}, deps = []) {
   useAnime(ref, (el) => {
     if (prefersReduced()) return
-    const splitter = splitText(el, { [split]: { wrap: 'clip' }, accessible: true })
+    const splitter = splitText(el, { [split]: { wrap: 'visible', class: 'split-piece' }, accessible: true })
     const parts = splitter[split]
     if (!parts?.length) return () => splitter.revert()
+    // Mask each piece with clip-path rather than overflow: the mask hides the piece
+    // below its baseline box but leaves room left/right, so overhanging glyphs
+    // (round letters with tight tracking, italic serifs) are never cut mid-animation.
+    parts.forEach((p) => {
+      const w = p.parentElement
+      if (!w) return
+      w.style.display = 'inline-block'
+      w.style.clipPath = 'inset(-0.05em -0.35em -0.12em -0.35em)'
+    })
     utils.set(parts, { y: '110%' })
     // once settled, undo the split: the clip masks would otherwise crop italic
     // overhangs and tight letter-spacing at the edges of each word

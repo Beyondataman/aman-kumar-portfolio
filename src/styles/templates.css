@@ -2,6 +2,10 @@
    v2 TEMPLATES — PageHero · CardGrid · HScrollTrack · CaseStudyLayout · charts
    ========================================================= */
 
+/* split-text pieces: gradient text is painted only inside each piece's box, so pad the box
+   (and pull the layout back with negative margins) to cover glyph overhangs while animating */
+.split-piece { display: inline-block; padding: 0 0.14em 0.1em; margin: 0 -0.14em -0.1em; }
+
 /* ---------- shared: silver display type + serif accent ---------- */
 .t-hero-title,
 .t-hero-title :where(span, br) {
