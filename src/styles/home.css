@@ -5,7 +5,7 @@
 .h-below-fallback { min-height: 100vh; }
 
 /* shared silver display type */
-.h-word, .h-giant, .h-giant :where(span), .pl-l, .h-row-t1, .h-row-t1 :where(span) {
+.h-word, .h-giant, .h-giant :where(span), .pl-g, .h-row-t1, .h-row-t1 :where(span) {
   background: linear-gradient(180deg, #fbfbfc 0%, #dcdee3 38%, #9a9ea8 72%, #5c606a 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
@@ -86,7 +86,12 @@
   background: radial-gradient(60% 55% at 50% 50%, #17181d 0%, #08080a 70%, #050506 100%);
 }
 .pl-name { display: flex; overflow: visible; font: 900 clamp(2.8rem, 9vw, 8.5rem)/0.9 var(--f-display); letter-spacing: -0.04em; }
-.pl-l { display: inline-block; will-change: transform; padding: 0.1em 0.12em; margin: -0.1em -0.12em; } /* room for overhangs: each letter paints its own gradient */
+.pl-l { position: relative; display: inline-block; will-change: transform, opacity; }
+.pl-sizer { visibility: hidden; } /* the final letter reserves the slot's width */
+/* the visible glyph, centred in its slot; padded so the gradient covers overhangs */
+.pl-g { position: absolute; inset: -0.12em -0.2em; padding: 0.12em 0.2em; text-align: center; }
+.pl-l:not(.is-set) .pl-g { filter: brightness(0.75); }
+.pl-l.is-set .pl-g { transition: filter 0.4s var(--ease); }
 .pl-sp { width: 0.28em; }
 .pl-line { width: min(60vw, 640px); height: 1px; background: rgba(255, 255, 255, 0.08); position: relative; overflow: hidden; }
 .pl-line i { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--accent), transparent); transform-origin: left; transform: scaleX(0); }
