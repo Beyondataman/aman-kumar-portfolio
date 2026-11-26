@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { animate, stagger } from 'animejs'
 
-const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+// flicker through digits and symbols only, so random frames can never spell a word
+const GLYPHS = '0123456789#%&@$*+=?/<>'
 const SEED = 'A' // the letter every slot starts as
 
 /**
@@ -54,7 +55,7 @@ export default function Preloader({ name, onDone }) {
     // 3 — resolve one letter at a time, in random order (one rAF clock, so slow
     //     devices only stretch the sequence — they never skip or overlap steps)
     const order = slots.map((_, i) => i).sort(() => Math.random() - 0.5)
-    const START = 1750, STEP = 240, FLICKER_MS = 300, TICK = 55
+    const START = 1750, STEP = 200, FLICKER_MS = 280, TICK = 28
     let raf = 0, t0 = 0, landed = 0
     const state = slots.map(() => ({ last: -1, set: false }))
     const resolve = (now) => {
